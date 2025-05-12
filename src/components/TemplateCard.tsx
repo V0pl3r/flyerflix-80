@@ -3,9 +3,10 @@ import { Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 type Template = {
-  id: string;
+  id: number | string;  // Updated to accept both number and string types
   title: string;
   imageUrl: string;
+  category?: string;    // Added category as optional property
   isPremium?: boolean;
 };
 
