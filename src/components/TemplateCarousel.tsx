@@ -3,7 +3,7 @@ import { useState, useRef } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface Template {
-  id: number;
+  id: number | string;
   title: string;
   imageUrl: string;
   category: string;
