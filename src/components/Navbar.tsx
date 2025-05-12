@@ -1,10 +1,26 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, User, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const user = localStorage.getItem('flyerflix-user');
+    setIsLoggedIn(!!user);
+  }, []);
+  
+  const handleLoginClick = () => {
+    if (isLoggedIn) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-flyerflix-black/90 backdrop-blur-md">
@@ -12,14 +28,16 @@ const Navbar = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <div className="flex items-center">
-            <a href="/" className="text-flyerflix-red text-3xl font-bold mr-10">FLYERFLIX</a>
+            <Link to="/" className="text-flyerflix-red text-3xl font-bold mr-10">FLYERFLIX</Link>
             
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex space-x-6">
-              <a href="#" className="text-white hover:text-flyerflix-red transition">Home</a>
+              <Link to="/" className="text-white hover:text-flyerflix-red transition">Home</Link>
               <a href="#" className="text-white hover:text-flyerflix-red transition">Categorias</a>
               <a href="#" className="text-white hover:text-flyerflix-red transition">Novidades</a>
-              <a href="#" className="text-white hover:text-flyerflix-red transition">Meus Favoritos</a>
+              {isLoggedIn && (
+                <Link to="/dashboard" className="text-white hover:text-flyerflix-red transition">Meus Favoritos</Link>
+              )}
             </div>
           </div>
           
@@ -33,13 +51,21 @@ const Navbar = () => {
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
             </div>
-            <Button className="flyerflix-btn-secondary" size="sm">
+            <Button 
+              className="flyerflix-btn-secondary" 
+              size="sm"
+              onClick={handleLoginClick}
+            >
               <User size={16} className="mr-2" />
-              Entrar
+              {isLoggedIn ? 'Minha Conta' : 'Entrar'}
             </Button>
-            <Button className="flyerflix-btn-primary" size="sm">
-              Assinar
-            </Button>
+            {!isLoggedIn && (
+              <Link to="/register">
+                <Button className="flyerflix-btn-primary" size="sm">
+                  Assinar
+                </Button>
+              </Link>
+            )}
           </div>
           
           {/* Mobile Menu Button */}
@@ -64,18 +90,27 @@ const Navbar = () => {
               />
               <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
             </div>
-            <a href="#" className="block text-white py-2">Home</a>
+            <Link to="/" className="block text-white py-2">Home</Link>
             <a href="#" className="block text-white py-2">Categorias</a>
             <a href="#" className="block text-white py-2">Novidades</a>
-            <a href="#" className="block text-white py-2">Meus Favoritos</a>
+            {isLoggedIn && (
+              <Link to="/dashboard" className="block text-white py-2">Meus Favoritos</Link>
+            )}
             <div className="flex flex-col space-y-2 pt-2">
-              <Button className="flyerflix-btn-secondary w-full">
+              <Button 
+                className="flyerflix-btn-secondary w-full"
+                onClick={handleLoginClick}
+              >
                 <User size={16} className="mr-2" />
-                Entrar
+                {isLoggedIn ? 'Minha Conta' : 'Entrar'}
               </Button>
-              <Button className="flyerflix-btn-primary w-full">
-                Assinar
-              </Button>
+              {!isLoggedIn && (
+                <Link to="/register" className="w-full">
+                  <Button className="flyerflix-btn-primary w-full">
+                    Assinar
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         )}

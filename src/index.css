@@ -75,4 +75,33 @@
   .carousel-container {
     @apply -mx-4 md:-mx-8 lg:-mx-12 xl:-mx-16 relative;
   }
+  
+  /* Member area specific styles */
+  .member-content-area {
+    @apply ml-16 md:ml-64;
+  }
+  
+  .member-header {
+    @apply bg-[#0b0b0b]/90 backdrop-blur-sm border-b border-white/10 h-16 flex items-center;
+  }
+  
+  .download-progress {
+    @apply h-1 bg-white/10 rounded-full overflow-hidden;
+  }
+  
+  .download-progress-bar {
+    @apply h-full bg-flyerflix-red transition-all duration-300;
+  }
+  
+  .plan-badge {
+    @apply rounded-full text-xs font-bold px-2 py-0.5;
+  }
+  
+  .plan-badge-free {
+    @apply bg-white/20 text-white;
+  }
+  
+  .plan-badge-ultimate {
+    @apply bg-flyerflix-red text-white;
+  }
 }
