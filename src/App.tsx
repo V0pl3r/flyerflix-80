@@ -11,6 +11,18 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
+// Admin imports
+import AdminLayout from "./pages/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminTemplates from "./pages/admin/AdminTemplates";
+import AdminCategories from "./pages/admin/AdminCategories";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
+import AdminFinancial from "./pages/admin/AdminFinancial";
+import AdminReports from "./pages/admin/AdminReports";
+import AdminSettings from "./pages/admin/AdminSettings";
+import AdminSupport from "./pages/admin/AdminSupport";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -25,7 +37,21 @@ const App = () => (
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/configuracoes" element={<Settings />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="templates" element={<AdminTemplates />} />
+            <Route path="categorias" element={<AdminCategories />} />
+            <Route path="usuarios" element={<AdminUsers />} />
+            <Route path="assinaturas" element={<AdminSubscriptions />} />
+            <Route path="financeiro" element={<AdminFinancial />} />
+            <Route path="relatorios" element={<AdminReports />} />
+            <Route path="configuracoes" element={<AdminSettings />} />
+            <Route path="suporte" element={<AdminSupport />} />
+          </Route>
+          
+          {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
