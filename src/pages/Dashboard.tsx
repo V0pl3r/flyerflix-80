@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Infinity } from 'lucide-react';
+import { Lock, Infinity, Heart, ExternalLink } from 'lucide-react';
 import { featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
 
 type Template = {
@@ -14,6 +14,9 @@ type Template = {
   title: string;
   imageUrl: string;
   isPremium?: boolean;
+  category?: string;
+  downloads?: number;
+  canvaUrl?: string;
 };
 
 type UserType = {
@@ -28,12 +31,19 @@ const Dashboard = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [downloadLimitReached, setDownloadLimitReached] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const { toast } = useToast();
   
   useEffect(() => {
     const userData = localStorage.getItem('flyerflix-user');
     if (userData) {
       setUser(JSON.parse(userData));
+    }
+    
+    // Carregar favoritos do localStorage
+    const storedFavorites = localStorage.getItem('flyerflix-favorites');
+    if (storedFavorites) {
+      setFavorites(JSON.parse(storedFavorites));
     }
   }, []);
   
@@ -47,7 +57,18 @@ const Dashboard = () => {
       return;
     }
     
-    setSelectedTemplate(template);
+    // Adicionar dados extras ao template selecionado para o modal
+    const templateWithExtras = {
+      ...template,
+      category: template.category || 'Geral',
+      downloads: template.downloads || Math.floor(Math.random() * 1000) + 100,
+      canvaUrl: template.canvaUrl || 'https://www.canva.com'
+    };
+    
+    setSelectedTemplate(templateWithExtras);
+    
+    // Registrar visualização no histórico (simulado)
+    console.log('Template visualizado:', template.id);
   };
   
   const handleDownload = () => {
@@ -70,13 +91,44 @@ const Dashboard = () => {
       setUser(updatedUser);
     }
     
-    // Process download
+    // Process download - redirect to Canva
+    if (selectedTemplate.canvaUrl) {
+      window.open(selectedTemplate.canvaUrl, '_blank');
+    }
+    
     toast({
       title: "Download iniciado!",
       description: `${selectedTemplate.title} está sendo baixado.`,
     });
     
     setSelectedTemplate(null);
+  };
+  
+  const handleToggleFavorite = (template: Template) => {
+    if (!template.id) return;
+    
+    let updatedFavorites: string[];
+    
+    if (favorites.includes(template.id)) {
+      updatedFavorites = favorites.filter(id => id !== template.id);
+      toast({
+        title: "Removido dos favoritos",
+        description: `${template.title} foi removido dos seus favoritos.`,
+      });
+    } else {
+      updatedFavorites = [...favorites, template.id];
+      toast({
+        title: "Adicionado aos favoritos",
+        description: `${template.title} foi adicionado aos seus favoritos.`,
+      });
+    }
+    
+    setFavorites(updatedFavorites);
+    localStorage.setItem('flyerflix-favorites', JSON.stringify(updatedFavorites));
+  };
+  
+  const isTemplateFavorite = (id: string) => {
+    return favorites.includes(id);
   };
   
   const handleUpgrade = () => {
@@ -170,45 +222,89 @@ const Dashboard = () => {
         )}
       </div>
       
-      {/* Download dialog */}
+      {/* Template details modal */}
       <Dialog open={!!selectedTemplate} onOpenChange={(open) => !open && setSelectedTemplate(null)}>
-        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white">
-          <DialogHeader>
-            <DialogTitle>Download Template</DialogTitle>
-            <DialogDescription className="text-white/70">
-              Você está prestes a baixar {selectedTemplate?.title}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {user?.plan === 'free' && (
-            <div className="py-2">
-              <p className="mb-2">Downloads restantes hoje: {(user?.maxDownloads as number) - user?.downloads} de {user?.maxDownloads}</p>
-              <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-flyerflix-red"
-                  style={{ 
-                    width: `${Math.min((user?.downloads / (user?.maxDownloads as number)) * 100, 100)}%` 
-                  }}
-                ></div>
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-md md:max-w-2xl">
+          {selectedTemplate && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedTemplate.title}</DialogTitle>
+                <DialogDescription className="text-white/70">
+                  Categoria: {selectedTemplate.category} • {selectedTemplate.downloads} downloads
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="flex flex-col md:flex-row gap-6 py-4">
+                <div className="w-full md:w-1/2">
+                  <div className="aspect-[9/16] relative rounded-lg overflow-hidden">
+                    <img 
+                      src={selectedTemplate.imageUrl} 
+                      alt={selectedTemplate.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                
+                <div className="w-full md:w-1/2 flex flex-col justify-between">
+                  <div>
+                    <p className="text-white/80 mb-6">
+                      Este template é perfeito para criar flyers atrativos e profissionais para o seu evento.
+                    </p>
+                    
+                    {user?.plan === 'free' && (
+                      <div className="mb-6">
+                        <p className="text-sm text-white/70 mb-2">Downloads restantes hoje:</p>
+                        <div className="flex justify-between text-xs text-white/70 mb-1">
+                          <span>{(user?.maxDownloads as number) - user?.downloads} de {user?.maxDownloads}</span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-flyerflix-red"
+                            style={{ 
+                              width: `${Math.min((user?.downloads / (user?.maxDownloads as number)) * 100, 100)}%` 
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {user?.plan === 'ultimate' && (
+                      <div className="flex items-center mb-6 text-white/70">
+                        <Infinity size={18} className="mr-2" />
+                        <span>Downloads ilimitados disponíveis</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col space-y-3">
+                    <Button
+                      variant="outline"
+                      className={`w-full border-white/20 hover:bg-white/10 ${
+                        isTemplateFavorite(selectedTemplate.id) 
+                          ? 'text-flyerflix-red' 
+                          : 'text-white'
+                      }`}
+                      onClick={() => handleToggleFavorite(selectedTemplate)}
+                    >
+                      <Heart
+                        size={16} 
+                        className={`mr-2 ${isTemplateFavorite(selectedTemplate.id) ? 'fill-flyerflix-red' : ''}`} 
+                      />
+                      {isTemplateFavorite(selectedTemplate.id) ? 'Remover dos Favoritos' : 'Adicionar aos Favoritos'}
+                    </Button>
+                    
+                    <Button 
+                      className="bg-flyerflix-red hover:bg-red-700 w-full"
+                      onClick={handleDownload}
+                    >
+                      <ExternalLink size={16} className="mr-2" />
+                      Editar no Canva
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </>
           )}
-          
-          {user?.plan === 'ultimate' && (
-            <div className="flex items-center py-2 text-white/70">
-              <Infinity size={18} className="mr-2" />
-              <span>Downloads ilimitados disponíveis</span>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedTemplate(null)}>
-              Cancelar
-            </Button>
-            <Button className="bg-flyerflix-red hover:bg-red-700" onClick={handleDownload}>
-              Baixar agora
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
       

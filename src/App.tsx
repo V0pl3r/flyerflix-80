@@ -10,6 +10,10 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
+import Downloads from "./pages/Downloads";
+import Favorites from "./pages/Favorites";
+import History from "./pages/History";
 
 // Admin imports
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -36,6 +40,10 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/perfil" element={<Profile />} />
+          <Route path="/meus-downloads" element={<Downloads />} />
+          <Route path="/favoritos" element={<Favorites />} />
+          <Route path="/historico" element={<History />} />
           <Route path="/configuracoes" element={<Settings />} />
           
           {/* Admin Routes */}

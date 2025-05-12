@@ -3,11 +3,12 @@ import { Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 type Template = {
-  id: number | string;  // Updated to accept both number and string types
+  id: number | string;  
   title: string;
   imageUrl: string;
-  category?: string;    // Added category as optional property
+  category?: string;    
   isPremium?: boolean;
+  canvaUrl?: string;
 };
 
 interface TemplateCardProps {

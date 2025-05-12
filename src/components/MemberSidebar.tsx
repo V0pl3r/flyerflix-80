@@ -109,9 +109,9 @@ const MemberSidebar = () => {
           <ul className="space-y-1 px-2">
             <li>
               <Link 
-                to="/dashboard" 
+                to="/perfil" 
                 className={`flex items-center px-3 py-2 rounded-lg transition ${
-                  isActive('/dashboard')
+                  isActive('/perfil')
                     ? 'bg-flyerflix-red text-white'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
@@ -122,9 +122,9 @@ const MemberSidebar = () => {
             </li>
             <li>
               <Link 
-                to="/downloads" 
+                to="/meus-downloads" 
                 className={`flex items-center px-3 py-2 rounded-lg transition ${
-                  isActive('/downloads')
+                  isActive('/meus-downloads')
                     ? 'bg-flyerflix-red text-white'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
