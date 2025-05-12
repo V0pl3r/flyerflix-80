@@ -3,14 +3,14 @@ import { useState } from 'react';
 import { Outlet, NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  Template, 
-  Category, 
+  FileType, 
+  Tag, 
   Users, 
   Database, 
   TrendingUp, 
   FileText,
   Settings, 
-  Support,
+  HelpCircle,
   Menu,
   X
 } from 'lucide-react';
@@ -75,14 +75,14 @@ const AdminLayout = () => {
 // Menu items with icons and paths
 const menuItems = [
   { label: 'Dashboard', path: '', icon: LayoutDashboard },
-  { label: 'Templates', path: '/templates', icon: Template },
-  { label: 'Categorias', path: '/categorias', icon: Category },
+  { label: 'Templates', path: '/templates', icon: FileType },
+  { label: 'Categorias', path: '/categorias', icon: Tag },
   { label: 'Usuários', path: '/usuarios', icon: Users },
   { label: 'Assinaturas', path: '/assinaturas', icon: Database },
   { label: 'Financeiro', path: '/financeiro', icon: TrendingUp },
   { label: 'Relatórios', path: '/relatorios', icon: FileText },
   { label: 'Configurações', path: '/configuracoes', icon: Settings },
-  { label: 'Suporte', path: '/suporte', icon: Support },
+  { label: 'Suporte', path: '/suporte', icon: HelpCircle },
 ];
 
 export default AdminLayout;

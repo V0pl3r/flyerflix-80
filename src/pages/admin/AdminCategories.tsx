@@ -1,195 +1,249 @@
 
-import { useState } from 'react';
-import { Plus, Edit, Trash } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { useState } from "react";
+import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
+import TableCard from "@/components/admin/TableCard";
 
-// Mock categories data
-const initialCategories = [
-  { id: '1', name: 'Festas', templateCount: 12 },
-  { id: '2', name: 'Casamentos', templateCount: 8 },
-  { id: '3', name: 'Aniversários', templateCount: 15 },
-  { id: '4', name: 'Corporativo', templateCount: 7 },
-  { id: '5', name: 'Outros', templateCount: 3 },
-];
-
-// Form schema for category
-const categoryFormSchema = z.object({
-  name: z.string().min(2, {
-    message: "O nome da categoria deve ter pelo menos 2 caracteres.",
-  }),
-});
+// Define the category type
+interface Category {
+  id: string;
+  name: string;
+  templateCount: number;
+}
 
 const AdminCategories = () => {
-  const [categories, setCategories] = useState(initialCategories);
-  const [editingCategory, setEditingCategory] = useState<any>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  
-  // Form setup
-  const form = useForm<z.infer<typeof categoryFormSchema>>({
-    resolver: zodResolver(categoryFormSchema),
-    defaultValues: {
-      name: "",
-    },
-  });
-  
-  const handleCreateNew = () => {
-    form.reset({
-      name: "",
-    });
-    setEditingCategory(null);
-    setDialogOpen(true);
-  };
-  
-  const handleEdit = (category: any) => {
-    form.reset({
-      name: category.name,
-    });
-    setEditingCategory(category);
-    setDialogOpen(true);
-  };
-  
-  const handleDelete = (id: string) => {
-    const categoryToDelete = categories.find(cat => cat.id === id);
-    
-    if (categoryToDelete && categoryToDelete.templateCount > 0) {
-      alert(`Esta categoria possui ${categoryToDelete.templateCount} templates vinculados. Remova ou reclassifique os templates antes de excluir a categoria.`);
+  const [categories, setCategories] = useState<Category[]>([
+    { id: "1", name: "Aniversário", templateCount: 25 },
+    { id: "2", name: "Casamento", templateCount: 18 },
+    { id: "3", name: "Formatura", templateCount: 12 },
+    { id: "4", name: "Festas", templateCount: 30 },
+    { id: "5", name: "Empresarial", templateCount: 9 },
+    { id: "6", name: "Infantil", templateCount: 20 },
+  ]);
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+
+  const handleAddCategory = () => {
+    if (!newCategoryName.trim()) {
+      toast("Erro", { description: "Nome da categoria é obrigatório" });
       return;
     }
-    
-    if (confirm("Tem certeza que deseja excluir esta categoria?")) {
-      setCategories(categories.filter(category => category.id !== id));
-    }
+
+    const newCategory: Category = {
+      id: Math.random().toString(36).substring(2, 9),
+      name: newCategoryName.trim(),
+      templateCount: 0,
+    };
+
+    setCategories([...categories, newCategory]);
+    setNewCategoryName("");
+    setIsAddDialogOpen(false);
+    toast("Categoria adicionada", {
+      description: `${newCategory.name} foi adicionada com sucesso.`,
+    });
   };
-  
-  const onSubmit = (data: z.infer<typeof categoryFormSchema>) => {
-    if (editingCategory) {
-      // Update existing category
-      setCategories(categories.map(category => 
-        category.id === editingCategory.id 
-          ? {...category, ...data} 
-          : category
-      ));
-    } else {
-      // Create new category
-      const newCategory = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...data,
-        templateCount: 0,
-      };
-      setCategories([...categories, newCategory]);
+
+  const handleEditCategory = () => {
+    if (!selectedCategory || !newCategoryName.trim()) {
+      toast("Erro", { description: "Nome da categoria é obrigatório" });
+      return;
     }
-    
-    setDialogOpen(false);
+
+    const updatedCategories = categories.map((cat) =>
+      cat.id === selectedCategory.id
+        ? { ...cat, name: newCategoryName.trim() }
+        : cat
+    );
+
+    setCategories(updatedCategories);
+    setNewCategoryName("");
+    setIsEditDialogOpen(false);
+    toast("Categoria atualizada", {
+      description: `Categoria atualizada para ${newCategoryName}.`,
+    });
   };
-  
+
+  const handleDeleteCategory = () => {
+    if (!selectedCategory) return;
+
+    const updatedCategories = categories.filter(
+      (cat) => cat.id !== selectedCategory.id
+    );
+
+    setCategories(updatedCategories);
+    setIsDeleteDialogOpen(false);
+    toast("Categoria removida", {
+      description: `${selectedCategory.name} foi removida com sucesso.`,
+    });
+  };
+
+  const openEditDialog = (category: Category) => {
+    setSelectedCategory(category);
+    setNewCategoryName(category.name);
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (category: Category) => {
+    setSelectedCategory(category);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const columns = [
+    { key: "name", title: "Nome da Categoria" },
+    { key: "templateCount", title: "Templates" },
+    {
+      key: "actions",
+      title: "Ações",
+      render: (_: any, category: Category) => (
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEditDialog(category)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openDeleteDialog(category)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Gerenciar Categorias</h1>
-        <Button onClick={handleCreateNew} className="bg-[#ea384c] hover:bg-[#d02d3f]">
-          <Plus size={16} className="mr-2" /> Nova Categoria
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Categorias</h2>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Nova Categoria
         </Button>
       </div>
-      
-      <div className="bg-[#222222] rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-[#1A1F2C]">
-              <TableHead>Nome</TableHead>
-              <TableHead>Templates Vinculados</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {categories.map((category) => (
-              <TableRow key={category.id} className="hover:bg-[#1A1F2C]">
-                <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell>{category.templateCount}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(category)}>
-                      <Edit size={18} className="text-yellow-500" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(category.id)}>
-                      <Trash size={18} className="text-red-500" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      
-      {/* Category Form Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[450px] bg-[#222222] text-white border-gray-800">
+
+      <TableCard title="Categorias de Templates" columns={columns} data={categories} />
+
+      {/* Add Category Dialog */}
+      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <DialogContent className="bg-[#222222] text-white">
           <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
-            </DialogTitle>
+            <DialogTitle>Adicionar Nova Categoria</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Digite o nome da nova categoria de templates.
+            </DialogDescription>
           </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome da Categoria</FormLabel>
-                    <FormControl>
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        placeholder="Nome da categoria" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter className="pt-4">
-                <DialogClose asChild>
-                  <Button variant="outline" className="bg-transparent text-white border-gray-600">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button type="submit" className="bg-[#ea384c] hover:bg-[#d02d3f]">
-                  {editingCategory ? 'Salvar Alterações' : 'Criar Categoria'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <div className="grid gap-4 py-4">
+            <Input
+              placeholder="Nome da categoria"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="bg-[#1A1F2C] border-gray-700"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddDialogOpen(false)}
+              className="border-gray-700 text-white hover:bg-[#1A1F2C] hover:text-white"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleAddCategory}
+              className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+            >
+              Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="bg-[#222222] text-white">
+          <DialogHeader>
+            <DialogTitle>Editar Categoria</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Altere o nome da categoria.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Input
+              placeholder="Nome da categoria"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              className="bg-[#1A1F2C] border-gray-700"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              className="border-gray-700 text-white hover:bg-[#1A1F2C] hover:text-white"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleEditCategory}
+              className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Category Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-[#222222] text-white">
+          <DialogHeader>
+            <DialogTitle>Remover Categoria</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Tem certeza que deseja remover esta categoria?
+              {selectedCategory?.templateCount > 0 && (
+                <span className="block mt-2 text-[#ea384c]">
+                  Atenção: Esta categoria possui {selectedCategory?.templateCount} templates vinculados.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="border-gray-700 text-white hover:bg-[#1A1F2C] hover:text-white"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeleteCategory}
+              variant="destructive"
+              className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+            >
+              Remover
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

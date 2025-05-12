@@ -1,858 +1,417 @@
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Save, Plus, Edit, Trash, Instagram, Facebook, Twitter } from 'lucide-react';
+import { useState } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/sonner";
+import { Save, Instagram, Facebook, Twitter, Mail, Phone } from "lucide-react";
 
 const AdminSettings = () => {
-  const [currentTab, setCurrentTab] = useState('general');
-  
-  // Mock data for plans
-  const [plans, setPlans] = useState([
-    { id: '1', name: 'Grátis', price: '0', features: ['2 downloads diários', 'Acesso a templates básicos'], isActive: true },
-    { id: '2', name: 'Ultimate', price: '23.90', features: ['Downloads ilimitados', 'Acesso a todos os templates', 'Prioridade no suporte'], isActive: true },
-  ]);
-  
-  // Form schema for platform settings
-  const platformFormSchema = z.object({
-    platformName: z.string().min(2, { message: 'O nome da plataforma é obrigatório' }),
-    logoUrl: z.string().url({ message: 'Insira uma URL válida para o logo' }).or(z.literal('')),
-    primaryColor: z.string(),
-    freeDownloadLimit: z.string().transform(value => Number(value)),
-    instagramUrl: z.string().url({ message: 'Insira uma URL válida para o Instagram' }).or(z.literal('')),
-    facebookUrl: z.string().url({ message: 'Insira uma URL válida para o Facebook' }).or(z.literal('')),
-    twitterUrl: z.string().url({ message: 'Insira uma URL válida para o Twitter' }).or(z.literal('')),
+  const [generalSettings, setGeneralSettings] = useState({
+    siteName: "Flyerflix",
+    siteDescription: "Plataforma de templates para eventos e festas",
+    contactEmail: "contato@flyerflix.com",
+    contactPhone: "+55 (11) 99999-9999",
+    logo: "/placeholder.svg",
   });
-  
-  // Form schema for email settings
-  const emailFormSchema = z.object({
-    smtpServer: z.string().min(1, { message: 'O servidor SMTP é obrigatório' }),
-    smtpPort: z.string().transform(value => Number(value)),
-    smtpUser: z.string().min(1, { message: 'O usuário SMTP é obrigatório' }),
-    smtpPassword: z.string().min(1, { message: 'A senha SMTP é obrigatória' }),
-    senderEmail: z.string().email({ message: 'Insira um email válido' }),
-    senderName: z.string().min(1, { message: 'O nome do remetente é obrigatório' }),
-  });
-  
-  // Form schema for plan settings
-  const planFormSchema = z.object({
-    name: z.string().min(1, { message: 'O nome do plano é obrigatório' }),
-    price: z.string(),
-    feature1: z.string(),
-    feature2: z.string(),
-    feature3: z.string().optional(),
-    feature4: z.string().optional(),
-    isActive: z.boolean().default(true),
-  });
-  
-  // Initialize forms
-  const platformForm = useForm<z.infer<typeof platformFormSchema>>({
-    resolver: zodResolver(platformFormSchema),
-    defaultValues: {
-      platformName: 'Flyerflix',
-      logoUrl: 'https://flyerflix.com/logo.png',
-      primaryColor: '#ea384c',
-      freeDownloadLimit: '2',
-      instagramUrl: 'https://instagram.com/flyerflix',
-      facebookUrl: 'https://facebook.com/flyerflix',
-      twitterUrl: '',
+
+  const [planSettings, setPlanSettings] = useState({
+    freePlan: {
+      downloadsPerDay: 2,
+      active: true,
     },
+    ultimatePlan: {
+      monthlyPrice: 23.90,
+      annualPrice: 215.40,
+      active: true,
+    }
   });
-  
-  const emailForm = useForm<z.infer<typeof emailFormSchema>>({
-    resolver: zodResolver(emailFormSchema),
-    defaultValues: {
-      smtpServer: 'smtp.sendgrid.net',
-      smtpPort: '587',
-      smtpUser: 'apikey',
-      smtpPassword: '••••••••••••••••',
-      senderEmail: 'noreply@flyerflix.com',
-      senderName: 'Flyerflix',
+
+  const [integrationSettings, setIntegrationSettings] = useState({
+    smtp: {
+      host: "smtp.provider.com",
+      port: 587,
+      username: "notifications@flyerflix.com",
+      password: "********",
+      enabled: true,
     },
-  });
-  
-  const planForm = useForm<z.infer<typeof planFormSchema>>({
-    resolver: zodResolver(planFormSchema),
-    defaultValues: {
-      name: '',
-      price: '',
-      feature1: '',
-      feature2: '',
-      feature3: '',
-      feature4: '',
-      isActive: true,
+    payment: {
+      provider: "stripe",
+      apiKey: "sk_test_***********************",
+      webhookSecret: "whsec_**********************",
+      enabled: true,
     },
+    analytics: {
+      googleTrackingId: "UA-123456789-1",
+      enabled: true,
+    }
   });
-  
-  // Submit handlers
-  const onSubmitPlatform = (data: z.infer<typeof platformFormSchema>) => {
-    console.log('Plataform settings saved:', data);
-    // Here you would typically update the settings in your backend
+
+  const [socialSettings, setSocialSettings] = useState({
+    instagram: "https://instagram.com/flyerflix",
+    facebook: "https://facebook.com/flyerflix",
+    twitter: "https://twitter.com/flyerflix",
+  });
+
+  const handleGeneralChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setGeneralSettings({
+      ...generalSettings,
+      [e.target.name]: e.target.value,
+    });
   };
-  
-  const onSubmitEmail = (data: z.infer<typeof emailFormSchema>) => {
-    console.log('Email settings saved:', data);
-    // Here you would typically update the email settings in your backend
-  };
-  
-  const onSubmitPlan = (data: z.infer<typeof planFormSchema>) => {
-    // Extract features from form data
-    const features = [
-      data.feature1,
-      data.feature2,
-      ...(data.feature3 ? [data.feature3] : []),
-      ...(data.feature4 ? [data.feature4] : []),
-    ].filter(Boolean);
-    
-    const newPlan = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: data.name,
-      price: data.price,
-      features,
-      isActive: data.isActive,
-    };
-    
-    setPlans([...plans, newPlan]);
-    planForm.reset();
-  };
-  
-  const handleDeletePlan = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este plano?')) {
-      setPlans(plans.filter(plan => plan.id !== id));
+
+  const handlePlanChange = (field: string, value: number | boolean) => {
+    if (field === "downloadsPerDay") {
+      setPlanSettings({
+        ...planSettings,
+        freePlan: {
+          ...planSettings.freePlan,
+          downloadsPerDay: value as number,
+        },
+      });
+    } else if (field === "monthlyPrice" || field === "annualPrice") {
+      setPlanSettings({
+        ...planSettings,
+        ultimatePlan: {
+          ...planSettings.ultimatePlan,
+          [field]: value as number,
+        },
+      });
+    } else if (field === "freePlanActive" || field === "ultimatePlanActive") {
+      const planType = field === "freePlanActive" ? "freePlan" : "ultimatePlan";
+      setPlanSettings({
+        ...planSettings,
+        [planType]: {
+          ...planSettings[planType as keyof typeof planSettings],
+          active: value as boolean,
+        },
+      });
     }
   };
-  
-  const handleEditPlan = (plan: any) => {
-    // Here you would typically open a dialog to edit the plan
-    console.log('Edit plan:', plan);
+
+  const handleSocialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSocialSettings({
+      ...socialSettings,
+      [e.target.name]: e.target.value,
+    });
   };
-  
+
+  const handleSaveSettings = (section: string) => {
+    toast("Configurações Salvas", {
+      description: `As configurações de ${section} foram salvas com sucesso.`,
+    });
+  };
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Configurações</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Configurações</h2>
       </div>
       
-      <Tabs 
-        value={currentTab} 
-        onValueChange={setCurrentTab}
-        className="mb-8"
-      >
-        <TabsList className="bg-[#1A1F2C] border-b border-gray-800 rounded-none p-0 h-auto w-full justify-start">
+      <Tabs defaultValue="general" className="w-full">
+        <TabsList className="bg-[#222222] border-b border-gray-800 rounded-none justify-start w-full h-auto mb-4 p-0">
           <TabsTrigger 
-            value="general" 
-            className="py-3 px-6 rounded-t-lg data-[state=active]:bg-[#222222] data-[state=active]:text-white data-[state=active]:shadow-none"
+            value="general"
+            className="rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#ea384c] data-[state=active]:bg-transparent text-gray-400 data-[state=active]:text-white py-3"
           >
             Geral
           </TabsTrigger>
           <TabsTrigger 
-            value="email" 
-            className="py-3 px-6 rounded-t-lg data-[state=active]:bg-[#222222] data-[state=active]:text-white data-[state=active]:shadow-none"
+            value="plans"
+            className="rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#ea384c] data-[state=active]:bg-transparent text-gray-400 data-[state=active]:text-white py-3"
           >
-            Email
+            Planos e Preços
           </TabsTrigger>
           <TabsTrigger 
-            value="plans" 
-            className="py-3 px-6 rounded-t-lg data-[state=active]:bg-[#222222] data-[state=active]:text-white data-[state=active]:shadow-none"
-          >
-            Planos
-          </TabsTrigger>
-          <TabsTrigger 
-            value="integrations" 
-            className="py-3 px-6 rounded-t-lg data-[state=active]:bg-[#222222] data-[state=active]:text-white data-[state=active]:shadow-none"
+            value="integrations"
+            className="rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#ea384c] data-[state=active]:bg-transparent text-gray-400 data-[state=active]:text-white py-3"
           >
             Integrações
           </TabsTrigger>
+          <TabsTrigger 
+            value="social"
+            className="rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#ea384c] data-[state=active]:bg-transparent text-gray-400 data-[state=active]:text-white py-3"
+          >
+            Redes Sociais
+          </TabsTrigger>
         </TabsList>
         
-        {/* General Settings Tab */}
-        <TabsContent value="general" className="mt-6">
-          <Form {...platformForm}>
-            <form onSubmit={platformForm.handleSubmit(onSubmitPlatform)} className="space-y-6">
-              <Card className="bg-[#222222] border-none">
-                <CardHeader>
-                  <CardTitle className="text-xl">Configurações da Plataforma</CardTitle>
-                  <CardDescription>
-                    Configure as informações básicas da sua plataforma
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={platformForm.control}
-                      name="platformName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome da Plataforma</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="Nome da plataforma" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={platformForm.control}
-                      name="logoUrl"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>URL do Logo</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="https://..." 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={platformForm.control}
-                      name="primaryColor"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Cor Primária</FormLabel>
-                          <div className="flex gap-3">
-                            <input 
-                              type="color"
-                              className="w-10 h-10 rounded border border-gray-800"
-                              {...field}
-                            />
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800 flex-1" 
-                                {...field} 
-                              />
-                            </FormControl>
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={platformForm.control}
-                      name="freeDownloadLimit"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Limite de Downloads (Plano Grátis)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              type="number"
-                              min="0"
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-base font-medium mb-3">Redes Sociais</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <FormField
-                        control={platformForm.control}
-                        name="instagramUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <Instagram size={16} /> Instagram
-                            </FormLabel>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="https://instagram.com/..." 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={platformForm.control}
-                        name="facebookUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <Facebook size={16} /> Facebook
-                            </FormLabel>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="https://facebook.com/..." 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={platformForm.control}
-                        name="twitterUrl"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <Twitter size={16} /> Twitter
-                            </FormLabel>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="https://twitter.com/..." 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="flex justify-end">
-                <Button type="submit" className="bg-[#ea384c] hover:bg-[#d02d3f] gap-2">
-                  <Save size={16} /> Salvar Alterações
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </TabsContent>
-        
-        {/* Email Settings Tab */}
-        <TabsContent value="email" className="mt-6">
-          <Form {...emailForm}>
-            <form onSubmit={emailForm.handleSubmit(onSubmitEmail)} className="space-y-6">
-              <Card className="bg-[#222222] border-none">
-                <CardHeader>
-                  <CardTitle className="text-xl">Configurações de Email</CardTitle>
-                  <CardDescription>
-                    Configure o servidor de email para envio de notificações
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={emailForm.control}
-                      name="smtpServer"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Servidor SMTP</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="ex: smtp.gmail.com" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={emailForm.control}
-                      name="smtpPort"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Porta SMTP</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="ex: 587" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={emailForm.control}
-                      name="smtpUser"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Usuário SMTP</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="Usuário ou API key" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={emailForm.control}
-                      name="smtpPassword"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Senha SMTP</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              type="password"
-                              placeholder="Senha ou API secret" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={emailForm.control}
-                      name="senderEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email do Remetente</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="noreply@seudominio.com" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={emailForm.control}
-                      name="senderName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome do Remetente</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="Nome da sua empresa" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-base font-medium mb-3">Testar Configuração</h3>
-                    <div className="flex gap-3">
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        placeholder="Email para teste" 
-                      />
-                      <Button variant="outline" className="bg-transparent border-gray-700 text-white hover:bg-[#1A1F2C]">
-                        Enviar Email de Teste
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-[#222222] border-none">
-                <CardHeader>
-                  <CardTitle className="text-xl">Modelos de Email</CardTitle>
-                  <CardDescription>
-                    Personalize os modelos de email enviados para seus usuários
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <div className="border border-gray-700 rounded-lg p-4 hover:bg-[#1A1F2C] cursor-pointer transition-colors">
-                      <h3 className="font-medium mb-1">Bem-vindo</h3>
-                      <p className="text-sm text-gray-400">Email enviado quando um usuário se cadastra</p>
-                    </div>
-                    
-                    <div className="border border-gray-700 rounded-lg p-4 hover:bg-[#1A1F2C] cursor-pointer transition-colors">
-                      <h3 className="font-medium mb-1">Recuperação de Senha</h3>
-                      <p className="text-sm text-gray-400">Email enviado para redefinir a senha</p>
-                    </div>
-                    
-                    <div className="border border-gray-700 rounded-lg p-4 hover:bg-[#1A1F2C] cursor-pointer transition-colors">
-                      <h3 className="font-medium mb-1">Assinatura Confirmada</h3>
-                      <p className="text-sm text-gray-400">Email enviado após pagamento confirmado</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="flex justify-end">
-                <Button type="submit" className="bg-[#ea384c] hover:bg-[#d02d3f] gap-2">
-                  <Save size={16} /> Salvar Alterações
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </TabsContent>
-        
-        {/* Plans Tab */}
-        <TabsContent value="plans" className="mt-6">
-          <Card className="bg-[#222222] border-none mb-8">
+        <TabsContent value="general">
+          <Card className="bg-[#222222] border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl">Planos Disponíveis</CardTitle>
-              <CardDescription>
-                Gerencie os planos e preços disponíveis para seus usuários
+              <CardTitle className="text-white">Configurações Gerais</CardTitle>
+              <CardDescription className="text-gray-400">
+                Defina as informações básicas da plataforma.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-[#1A1F2C]">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Preço (R$)</TableHead>
-                    <TableHead>Recursos</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {plans.map((plan) => (
-                    <TableRow key={plan.id} className="hover:bg-[#1A1F2C]">
-                      <TableCell className="font-medium">{plan.name}</TableCell>
-                      <TableCell>{plan.price === '0' ? 'Grátis' : `R$ ${plan.price}`}</TableCell>
-                      <TableCell>
-                        <ul className="list-disc list-inside">
-                          {plan.features.map((feature, index) => (
-                            <li key={index} className="text-sm">{feature}</li>
-                          ))}
-                        </ul>
-                      </TableCell>
-                      <TableCell>
-                        {plan.isActive ? (
-                          <Badge className="bg-emerald-500">Ativo</Badge>
-                        ) : (
-                          <Badge className="bg-gray-500">Inativo</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEditPlan(plan)}>
-                            <Edit size={18} className="text-yellow-500" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDeletePlan(plan.id)}>
-                            <Trash size={18} className="text-red-500" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-[#222222] border-none">
-            <CardHeader>
-              <CardTitle className="text-xl">Adicionar Novo Plano</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...planForm}>
-                <form onSubmit={planForm.handleSubmit(onSubmitPlan)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <FormField
-                      control={planForm.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nome do Plano</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="ex: Plano Básico" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={planForm.control}
-                      name="price"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Preço Mensal (R$)</FormLabel>
-                          <FormControl>
-                            <Input 
-                              className="bg-[#1A1F2C] border-gray-800" 
-                              placeholder="ex: 19.90" 
-                              {...field} 
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-base font-medium mb-3">Recursos do Plano</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <FormField
-                        control={planForm.control}
-                        name="feature1"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="Recurso 1" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={planForm.control}
-                        name="feature2"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="Recurso 2" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={planForm.control}
-                        name="feature3"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="Recurso 3 (opcional)" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={planForm.control}
-                        name="feature4"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormControl>
-                              <Input 
-                                className="bg-[#1A1F2C] border-gray-800" 
-                                placeholder="Recurso 4 (opcional)" 
-                                {...field} 
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                  
-                  <FormField
-                    control={planForm.control}
-                    name="isActive"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center gap-3 space-y-0">
-                        <FormControl>
-                          <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <FormLabel className="mt-0 cursor-pointer">Plano Ativo</FormLabel>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="siteName" className="text-white">Nome do Site</Label>
+                  <Input
+                    id="siteName"
+                    name="siteName"
+                    value={generalSettings.siteName}
+                    onChange={handleGeneralChange}
+                    className="bg-[#1A1F2C] border-gray-700 text-white"
                   />
-                  
-                  <div>
-                    <Button type="submit" className="bg-[#ea384c] hover:bg-[#d02d3f] gap-2">
-                      <Plus size={16} /> Adicionar Plano
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="logo" className="text-white">Logo URL</Label>
+                  <Input
+                    id="logo"
+                    name="logo"
+                    value={generalSettings.logo}
+                    onChange={handleGeneralChange}
+                    className="bg-[#1A1F2C] border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="siteDescription" className="text-white">Descrição</Label>
+                <Textarea
+                  id="siteDescription"
+                  name="siteDescription"
+                  value={generalSettings.siteDescription}
+                  onChange={handleGeneralChange}
+                  className="bg-[#1A1F2C] border-gray-700 text-white"
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail" className="text-white">
+                    <Mail className="inline-block h-4 w-4 mr-1" />
+                    Email de Contato
+                  </Label>
+                  <Input
+                    id="contactEmail"
+                    name="contactEmail"
+                    value={generalSettings.contactEmail}
+                    onChange={handleGeneralChange}
+                    className="bg-[#1A1F2C] border-gray-700 text-white"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactPhone" className="text-white">
+                    <Phone className="inline-block h-4 w-4 mr-1" />
+                    Telefone de Contato
+                  </Label>
+                  <Input
+                    id="contactPhone"
+                    name="contactPhone"
+                    value={generalSettings.contactPhone}
+                    onChange={handleGeneralChange}
+                    className="bg-[#1A1F2C] border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+              
+              <Button onClick={() => handleSaveSettings("Geral")} className="bg-[#ea384c] hover:bg-[#ea384c]/80 mt-4">
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Configurações
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
         
-        {/* Integrations Tab */}
-        <TabsContent value="integrations" className="mt-6">
-          <Card className="bg-[#222222] border-none mb-6">
+        <TabsContent value="plans">
+          <Card className="bg-[#222222] border-none shadow-lg">
             <CardHeader>
-              <CardTitle className="text-xl">Integrações</CardTitle>
-              <CardDescription>
-                Configure as integrações com ferramentas externas
+              <CardTitle className="text-white">Planos e Preços</CardTitle>
+              <CardDescription className="text-gray-400">
+                Configure os planos disponíveis e seus valores.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="border border-gray-700 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-white p-2 rounded">
-                        <img src="https://www.gstatic.com/analytics-suite/header/suite/v2/ic_analytics.svg" className="w-8 h-8" alt="Google Analytics" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Google Analytics</h3>
-                        <p className="text-sm text-gray-400">Rastreie o tráfego e comportamento dos usuários</p>
-                      </div>
-                    </div>
-                    <Switch />
+            <CardContent className="space-y-6">
+              {/* Plano Gratuito */}
+              <div className="border border-gray-800 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-white">Plano Gratuito</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      checked={planSettings.freePlan.active} 
+                      onCheckedChange={(checked) => handlePlanChange("freePlanActive", checked)}
+                    />
+                    <Label className="text-gray-400">{planSettings.freePlan.active ? "Ativo" : "Inativo"}</Label>
                   </div>
-                  
-                  <div className="pt-4 border-t border-gray-700">
-                    <Label className="mb-2 block">ID de Acompanhamento</Label>
-                    <Input 
-                      className="bg-[#1A1F2C] border-gray-800" 
-                      placeholder="ex: UA-XXXXXXXXX-X or G-XXXXXXXXXX"
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="downloadsPerDay" className="text-white">Downloads diários permitidos</Label>
+                  <Input
+                    id="downloadsPerDay"
+                    type="number"
+                    value={planSettings.freePlan.downloadsPerDay}
+                    onChange={(e) => handlePlanChange("downloadsPerDay", parseInt(e.target.value, 10))}
+                    className="bg-[#1A1F2C] border-gray-700 text-white"
+                  />
+                </div>
+              </div>
+              
+              {/* Plano Ultimate */}
+              <div className="border border-gray-800 rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-white">Plano Ultimate</h3>
+                  <div className="flex items-center space-x-2">
+                    <Switch 
+                      checked={planSettings.ultimatePlan.active} 
+                      onCheckedChange={(checked) => handlePlanChange("ultimatePlanActive", checked)}
+                    />
+                    <Label className="text-gray-400">{planSettings.ultimatePlan.active ? "Ativo" : "Inativo"}</Label>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="monthlyPrice" className="text-white">Preço Mensal (R$)</Label>
+                    <Input
+                      id="monthlyPrice"
+                      type="number"
+                      value={planSettings.ultimatePlan.monthlyPrice}
+                      onChange={(e) => handlePlanChange("monthlyPrice", parseFloat(e.target.value))}
+                      className="bg-[#1A1F2C] border-gray-700 text-white"
+                      step="0.01"
                     />
                   </div>
-                </div>
-                
-                <div className="border border-gray-700 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-[#6772E5] p-2 rounded">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" className="w-8 h-8" alt="Stripe" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Stripe</h3>
-                        <p className="text-sm text-gray-400">Processe pagamentos e gerencie assinaturas</p>
-                      </div>
-                    </div>
-                    <Switch checked={true} />
-                  </div>
-                  
-                  <div className="space-y-4 pt-4 border-t border-gray-700">
-                    <div>
-                      <Label className="mb-2 block">API Key</Label>
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        type="password"
-                        value="sk_test_••••••••••••••••••••••••"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label className="mb-2 block">Webhook Secret</Label>
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        type="password"
-                        value="whsec_••••••••••••••••••••••••"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="border border-gray-700 rounded-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-[#00C4CC] p-2 rounded">
-                        <img src="https://static.canva.com/static/images/canva_logo_100x100@2x.png" className="w-8 h-8" alt="Canva" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Canva API</h3>
-                        <p className="text-sm text-gray-400">Integre com o Canva para seus templates</p>
-                      </div>
-                    </div>
-                    <Switch checked={true} />
-                  </div>
-                  
-                  <div className="pt-4 border-t border-gray-700">
-                    <Label className="mb-2 block">Client ID</Label>
-                    <Input 
-                      className="bg-[#1A1F2C] border-gray-800" 
-                      type="password"
-                      value="••••••••••••••••••••••••"
+                  <div className="space-y-2">
+                    <Label htmlFor="annualPrice" className="text-white">Preço Anual (R$)</Label>
+                    <Input
+                      id="annualPrice"
+                      type="number"
+                      value={planSettings.ultimatePlan.annualPrice}
+                      onChange={(e) => handlePlanChange("annualPrice", parseFloat(e.target.value))}
+                      className="bg-[#1A1F2C] border-gray-700 text-white"
+                      step="0.01"
                     />
                   </div>
                 </div>
               </div>
+              
+              <Button onClick={() => handleSaveSettings("Planos")} className="bg-[#ea384c] hover:bg-[#ea384c]/80">
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Configurações
+              </Button>
             </CardContent>
           </Card>
-          
-          <div className="flex justify-end">
-            <Button className="bg-[#ea384c] hover:bg-[#d02d3f] gap-2">
-              <Save size={16} /> Salvar Todas as Integrações
-            </Button>
-          </div>
+        </TabsContent>
+        
+        <TabsContent value="integrations">
+          <Card className="bg-[#222222] border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-white">Integrações</CardTitle>
+              <CardDescription className="text-gray-400">
+                Configure as integrações com serviços externos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <h3 className="text-lg font-medium text-white">Serviços Integrados</h3>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border border-gray-800 rounded-lg">
+                  <div>
+                    <h4 className="text-white font-medium">Provedor de Email (SMTP)</h4>
+                    <p className="text-gray-400 text-sm">{integrationSettings.smtp.host}:{integrationSettings.smtp.port}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch checked={integrationSettings.smtp.enabled} />
+                    <span className="text-gray-400">{integrationSettings.smtp.enabled ? "Ativo" : "Inativo"}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 border border-gray-800 rounded-lg">
+                  <div>
+                    <h4 className="text-white font-medium">Pagamento ({integrationSettings.payment.provider})</h4>
+                    <p className="text-gray-400 text-sm">API Key: {integrationSettings.payment.apiKey.substring(0, 8)}...</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch checked={integrationSettings.payment.enabled} />
+                    <span className="text-gray-400">{integrationSettings.payment.enabled ? "Ativo" : "Inativo"}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center justify-between p-4 border border-gray-800 rounded-lg">
+                  <div>
+                    <h4 className="text-white font-medium">Google Analytics</h4>
+                    <p className="text-gray-400 text-sm">{integrationSettings.analytics.googleTrackingId}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch checked={integrationSettings.analytics.enabled} />
+                    <span className="text-gray-400">{integrationSettings.analytics.enabled ? "Ativo" : "Inativo"}</span>
+                  </div>
+                </div>
+              </div>
+              
+              <Button onClick={() => handleSaveSettings("Integrações")} className="bg-[#ea384c] hover:bg-[#ea384c]/80">
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Configurações
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="social">
+          <Card className="bg-[#222222] border-none shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-white">Redes Sociais</CardTitle>
+              <CardDescription className="text-gray-400">
+                Configure os links para as redes sociais do Flyerflix.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Instagram className="text-[#ea384c]" />
+                  <Label htmlFor="instagram" className="text-white">Instagram</Label>
+                </div>
+                <Input
+                  id="instagram"
+                  name="instagram"
+                  value={socialSettings.instagram}
+                  onChange={handleSocialChange}
+                  className="bg-[#1A1F2C] border-gray-700 text-white"
+                />
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Facebook className="text-[#ea384c]" />
+                  <Label htmlFor="facebook" className="text-white">Facebook</Label>
+                </div>
+                <Input
+                  id="facebook"
+                  name="facebook"
+                  value={socialSettings.facebook}
+                  onChange={handleSocialChange}
+                  className="bg-[#1A1F2C] border-gray-700 text-white"
+                />
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Twitter className="text-[#ea384c]" />
+                  <Label htmlFor="twitter" className="text-white">Twitter</Label>
+                </div>
+                <Input
+                  id="twitter"
+                  name="twitter"
+                  value={socialSettings.twitter}
+                  onChange={handleSocialChange}
+                  className="bg-[#1A1F2C] border-gray-700 text-white"
+                />
+              </div>
+              
+              <Button onClick={() => handleSaveSettings("Redes Sociais")} className="bg-[#ea384c] hover:bg-[#ea384c]/80 mt-4">
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Configurações
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

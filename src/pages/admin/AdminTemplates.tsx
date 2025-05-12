@@ -1,461 +1,451 @@
 
-import { useState } from 'react';
-import { 
-  Plus, Search, Edit, Trash, Eye, 
-  XCircle, CheckCircle 
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { useState } from "react";
+import { PlusCircle, Pencil, Trash2, Link, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
+import { Badge } from "@/components/ui/badge";
+import TableCard from "@/components/admin/TableCard";
 
-// Mock data for templates
-const mockTemplates = [
-  { 
-    id: '1', 
-    title: 'Festa Junina 2023', 
-    imageUrl: 'https://i.ibb.co/cXrsZQ9/festa-junina.jpg', 
-    category: 'Festas', 
-    downloads: 523, 
-    status: 'ativo',
-    premium: true,
-    canvaLink: 'https://canva.com/design/1',
-  },
-  { 
-    id: '2', 
-    title: 'Casamento Elegante', 
-    imageUrl: 'https://i.ibb.co/DgrWTrP/casamento.jpg', 
-    category: 'Casamentos', 
-    downloads: 487, 
-    status: 'ativo',
-    premium: true,
-    canvaLink: 'https://canva.com/design/2',
-  },
-  { 
-    id: '3', 
-    title: 'Aniversário Infantil', 
-    imageUrl: 'https://i.ibb.co/rxqFzbR/aniversario.jpg', 
-    category: 'Aniversários', 
-    downloads: 378, 
-    status: 'ativo',
-    premium: false,
-    canvaLink: 'https://canva.com/design/3',
-  },
-  { 
-    id: '4', 
-    title: 'Confraternização Empresarial', 
-    imageUrl: 'https://i.ibb.co/CnGXPz6/corporativo.jpg', 
-    category: 'Corporativo', 
-    downloads: 352, 
-    status: 'ativo',
-    premium: true,
-    canvaLink: 'https://canva.com/design/4',
-  },
-  { 
-    id: '5', 
-    title: 'Halloween Party', 
-    imageUrl: 'https://i.ibb.co/bgMnGWK/halloween.jpg', 
-    category: 'Festas', 
-    downloads: 301, 
-    status: 'inativo',
-    premium: false,
-    canvaLink: 'https://canva.com/design/5',
-  },
-];
-
-// Mock categories data
-const categories = [
-  { id: '1', name: 'Festas' },
-  { id: '2', name: 'Casamentos' },
-  { id: '3', name: 'Aniversários' },
-  { id: '4', name: 'Corporativo' },
-  { id: '5', name: 'Outros' },
-];
-
-// Form schema for template form
-const templateFormSchema = z.object({
-  title: z.string().min(2, {
-    message: "O título deve ter pelo menos 2 caracteres.",
-  }),
-  imageUrl: z.string().url({
-    message: "Por favor, insira uma URL válida para a imagem.",
-  }),
-  canvaLink: z.string().url({
-    message: "Por favor, insira uma URL válida para o template no Canva.",
-  }),
-  category: z.string({
-    required_error: "Por favor, selecione uma categoria.",
-  }),
-  status: z.enum(["ativo", "inativo"]),
-  premium: z.boolean().default(false),
-});
+// Define template interface
+interface Template {
+  id: string;
+  title: string;
+  imageUrl: string;
+  category: string;
+  downloads: number;
+  status: string;
+  premium: boolean;
+  canvaLink: string;
+}
 
 const AdminTemplates = () => {
-  const [templates, setTemplates] = useState(mockTemplates);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  
-  // Form setup
-  const form = useForm<z.infer<typeof templateFormSchema>>({
-    resolver: zodResolver(templateFormSchema),
-    defaultValues: {
-      title: "",
-      imageUrl: "",
-      canvaLink: "",
+  const [templates, setTemplates] = useState<Template[]>([
+    {
+      id: "1",
+      title: "Template Aniversário Modern",
+      imageUrl: "/placeholder.svg",
+      category: "Aniversário",
+      downloads: 1245,
       status: "ativo",
-      premium: false,
+      premium: true,
+      canvaLink: "https://canva.com/design/template1",
     },
-  });
-  
-  // Filter templates based on search term
-  const filteredTemplates = templates.filter(template => 
-    template.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    template.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  const handleCreateNew = () => {
-    form.reset({
-      title: "",
-      imageUrl: "",
-      canvaLink: "",
+    {
+      id: "2",
+      title: "Convite de Casamento Elegante",
+      imageUrl: "/placeholder.svg",
+      category: "Casamento",
+      downloads: 986,
+      status: "ativo",
+      premium: true,
+      canvaLink: "https://canva.com/design/template2",
+    },
+    {
+      id: "3",
+      title: "Flyer de Formatura",
+      imageUrl: "/placeholder.svg",
+      category: "Formatura",
+      downloads: 574,
       status: "ativo",
       premium: false,
-    });
-    setEditingTemplate(null);
-    setDialogOpen(true);
-  };
-  
-  const handleEdit = (template: any) => {
-    form.reset({
-      title: template.title,
-      imageUrl: template.imageUrl,
-      canvaLink: template.canvaLink,
-      category: template.category,
-      status: template.status,
-      premium: template.premium,
-    });
-    setEditingTemplate(template);
-    setDialogOpen(true);
-  };
-  
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja remover este template?")) {
-      setTemplates(templates.filter(template => template.id !== id));
+      canvaLink: "https://canva.com/design/template3",
+    },
+    {
+      id: "4",
+      title: "Festa Neon Flyer",
+      imageUrl: "/placeholder.svg",
+      category: "Festas",
+      downloads: 1050,
+      status: "inativo",
+      premium: false,
+      canvaLink: "https://canva.com/design/template4",
     }
-  };
+  ]);
+
+  const categories = [
+    "Aniversário",
+    "Casamento",
+    "Formatura",
+    "Festas",
+    "Empresarial",
+    "Infantil",
+  ];
+
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  const toggleStatus = (id: string) => {
-    setTemplates(templates.map(template => 
-      template.id === id 
-        ? {...template, status: template.status === 'ativo' ? 'inativo' : 'ativo'} 
-        : template
-    ));
-  };
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   
-  const onSubmit = (data: z.infer<typeof templateFormSchema>) => {
-    if (editingTemplate) {
-      // Update existing template
-      setTemplates(templates.map(template => 
-        template.id === editingTemplate.id 
-          ? {...template, ...data} 
-          : template
-      ));
-    } else {
-      // Create new template
-      const newTemplate = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...data,
-        downloads: 0,
-      };
-      setTemplates([...templates, newTemplate]);
+  const [newTemplate, setNewTemplate] = useState<Template>({
+    id: "",
+    title: "",
+    imageUrl: "/placeholder.svg",
+    category: "",
+    downloads: 0,
+    status: "ativo",
+    premium: false,
+    canvaLink: "",
+  });
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: keyof Template
+  ) => {
+    setNewTemplate({ ...newTemplate, [field]: e.target.value });
+  };
+
+  const handleSelectChange = (value: string, field: keyof Template) => {
+    setNewTemplate({ ...newTemplate, [field]: value });
+  };
+
+  const handleAddTemplate = () => {
+    if (!newTemplate.title || !newTemplate.category || !newTemplate.canvaLink) {
+      toast("Erro", {
+        description: "Preencha todos os campos obrigatórios.",
+      });
+      return;
     }
-    
-    setDialogOpen(false);
+
+    const templateToAdd: Template = {
+      ...newTemplate,
+      id: Math.random().toString(36).substring(2, 9),
+    };
+
+    setTemplates([...templates, templateToAdd]);
+    setIsAddDialogOpen(false);
+    resetNewTemplate();
+    toast("Template adicionado", {
+      description: `${templateToAdd.title} foi adicionado com sucesso.`,
+    });
   };
-  
+
+  const handleEditTemplate = () => {
+    if (!selectedTemplate || !newTemplate.title || !newTemplate.category || !newTemplate.canvaLink) {
+      toast("Erro", {
+        description: "Preencha todos os campos obrigatórios.",
+      });
+      return;
+    }
+
+    const updatedTemplates = templates.map((template) =>
+      template.id === selectedTemplate.id ? { ...newTemplate, id: template.id } : template
+    );
+
+    setTemplates(updatedTemplates);
+    setIsEditDialogOpen(false);
+    resetNewTemplate();
+    toast("Template atualizado", {
+      description: `${newTemplate.title} foi atualizado com sucesso.`,
+    });
+  };
+
+  const handleDeleteTemplate = () => {
+    if (!selectedTemplate) return;
+
+    const updatedTemplates = templates.filter(
+      (template) => template.id !== selectedTemplate.id
+    );
+
+    setTemplates(updatedTemplates);
+    setIsDeleteDialogOpen(false);
+    toast("Template removido", {
+      description: `${selectedTemplate.title} foi removido com sucesso.`,
+    });
+  };
+
+  const resetNewTemplate = () => {
+    setNewTemplate({
+      id: "",
+      title: "",
+      imageUrl: "/placeholder.svg",
+      category: "",
+      downloads: 0,
+      status: "ativo",
+      premium: false,
+      canvaLink: "",
+    });
+  };
+
+  const openEditDialog = (template: Template) => {
+    setSelectedTemplate(template);
+    setNewTemplate({ ...template });
+    setIsEditDialogOpen(true);
+  };
+
+  const openDeleteDialog = (template: Template) => {
+    setSelectedTemplate(template);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const columns = [
+    {
+      key: "title",
+      title: "Nome",
+      render: (value: string, template: Template) => (
+        <div className="flex items-center">
+          <div className="h-10 w-10 rounded bg-gray-800 mr-3">
+            <img
+              src={template.imageUrl}
+              alt={template.title}
+              className="h-full w-full object-cover rounded"
+            />
+          </div>
+          <div>
+            <div className="font-medium">{value}</div>
+            <div className="text-xs text-gray-400">{template.category}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "downloads",
+      title: "Downloads",
+    },
+    {
+      key: "premium",
+      title: "Tipo",
+      render: (value: boolean) => (
+        <Badge variant={value ? "default" : "outline"} className={value ? "bg-amber-600 text-white hover:bg-amber-700" : "text-gray-300"}>
+          {value ? "Premium" : "Grátis"}
+        </Badge>
+      ),
+    },
+    {
+      key: "status",
+      title: "Status",
+      render: (value: string) => (
+        <Badge variant={value === "ativo" ? "default" : "outline"} className={value === "ativo" ? "bg-emerald-600 text-white hover:bg-emerald-700" : "text-gray-300"}>
+          {value === "ativo" ? "Ativo" : "Inativo"}
+        </Badge>
+      ),
+    },
+    {
+      key: "canvaLink",
+      title: "Canva",
+      render: (value: string) => (
+        <a
+          href={value}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#ea384c] hover:underline flex items-center"
+        >
+          <ExternalLink className="h-4 w-4 mr-1" />
+          Link
+        </a>
+      ),
+    },
+    {
+      key: "actions",
+      title: "Ações",
+      render: (_: any, template: Template) => (
+        <div className="flex space-x-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEditDialog(template)}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openDeleteDialog(template)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Gerenciar Templates</h1>
-        <Button onClick={handleCreateNew} className="bg-[#ea384c] hover:bg-[#d02d3f]">
-          <Plus size={16} className="mr-2" /> Novo Template
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-white">Templates</h2>
+        <Button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+        >
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Novo Template
         </Button>
       </div>
-      
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-        <Input 
-          className="bg-[#1A1F2C] border-0 pl-10" 
-          placeholder="Pesquisar templates..." 
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-      
-      <div className="bg-[#222222] rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-[#1A1F2C]">
-              <TableHead>Template</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Downloads</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredTemplates.map((template) => (
-              <TableRow key={template.id} className="hover:bg-[#1A1F2C]">
-                <TableCell className="font-medium">
-                  <div className="flex items-center">
-                    <div className="w-10 h-16 rounded overflow-hidden mr-3">
-                      <img 
-                        src={template.imageUrl} 
-                        alt={template.title} 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <span>{template.title}</span>
-                  </div>
-                </TableCell>
-                <TableCell>{template.category}</TableCell>
-                <TableCell>{template.downloads}</TableCell>
-                <TableCell>
-                  {template.status === 'ativo' ? (
-                    <Badge variant="outline" className="bg-emerald-500/20 text-emerald-500 border-emerald-500/50">
-                      Ativo
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-gray-500/20 text-gray-400 border-gray-500/50">
-                      Inativo
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {template.premium ? (
-                    <Badge className="bg-[#ea384c]">Premium</Badge>
-                  ) : (
-                    <Badge className="bg-gray-600">Gratuito</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => toggleStatus(template.id)}>
-                      {template.status === 'ativo' ? (
-                        <XCircle size={18} className="text-gray-400" />
-                      ) : (
-                        <CheckCircle size={18} className="text-emerald-500" />
-                      )}
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Eye size={18} className="text-blue-500" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(template)}>
-                      <Edit size={18} className="text-yellow-500" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(template.id)}>
-                      <Trash size={18} className="text-red-500" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
 
-      {/* Template Form Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-[550px] bg-[#222222] text-white border-gray-800">
+      <TableCard title="Templates" columns={columns} data={templates} />
+
+      {/* Add/Edit Template Dialog */}
+      <Dialog
+        open={isAddDialogOpen || isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (isAddDialogOpen) setIsAddDialogOpen(open);
+          if (isEditDialogOpen) setIsEditDialogOpen(open);
+          if (!open) resetNewTemplate();
+        }}
+      >
+        <DialogContent className="bg-[#222222] text-white max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingTemplate ? 'Editar Template' : 'Novo Template'}
+              {isAddDialogOpen ? "Adicionar Novo Template" : "Editar Template"}
             </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Preencha os detalhes do template abaixo.
+            </DialogDescription>
           </DialogHeader>
-          
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Título</FormLabel>
-                    <FormControl>
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        placeholder="Nome do template" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Nome do Template*</Label>
+              <Input
+                id="title"
+                value={newTemplate.title}
+                onChange={(e) => handleInputChange(e, "title")}
+                className="bg-[#1A1F2C] border-gray-700"
               />
-              
-              <FormField
-                control={form.control}
-                name="imageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL da Imagem</FormLabel>
-                    <FormControl>
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        placeholder="https://..." 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormDescription className="text-gray-400">
-                      URL da imagem de capa do template (proporção 9:16)
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="canvaLink"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Link no Canva</FormLabel>
-                    <FormControl>
-                      <Input 
-                        className="bg-[#1A1F2C] border-gray-800" 
-                        placeholder="https://canva.com/..." 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-[#1A1F2C] border-gray-800">
-                          <SelectValue placeholder="Selecione uma categoria" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-[#1A1F2C] border-gray-800">
-                        {categories.map((category) => (
-                          <SelectItem key={category.id} value={category.name}>
-                            {category.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Status</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="bg-[#1A1F2C] border-gray-800">
-                            <SelectValue placeholder="Status do template" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="bg-[#1A1F2C] border-gray-800">
-                          <SelectItem value="ativo">Ativo</SelectItem>
-                          <SelectItem value="inativo">Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="premium"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-end space-x-3 space-y-0">
-                      <FormControl>
-                        <div className="flex h-10 items-center">
-                          <input
-                            type="checkbox"
-                            className="h-5 w-5 rounded border-gray-600"
-                            checked={field.value}
-                            onChange={field.onChange}
-                          />
-                        </div>
-                      </FormControl>
-                      <FormLabel className="mt-0">Template Premium</FormLabel>
-                    </FormItem>
-                  )}
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="category">Categoria*</Label>
+              <Select
+                value={newTemplate.category}
+                onValueChange={(value) => handleSelectChange(value, "category")}
+              >
+                <SelectTrigger className="bg-[#1A1F2C] border-gray-700">
+                  <SelectValue placeholder="Selecione uma categoria" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1F2C] border-gray-700">
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="canvaLink">Link do Canva*</Label>
+              <div className="flex items-center space-x-2">
+                <Link className="h-4 w-4 text-gray-400" />
+                <Input
+                  id="canvaLink"
+                  value={newTemplate.canvaLink}
+                  onChange={(e) => handleInputChange(e, "canvaLink")}
+                  className="bg-[#1A1F2C] border-gray-700"
+                  placeholder="https://canva.com/design/..."
                 />
               </div>
-              
-              <DialogFooter className="pt-4">
-                <DialogClose asChild>
-                  <Button variant="outline" className="bg-transparent text-white border-gray-600">
-                    Cancelar
-                  </Button>
-                </DialogClose>
-                <Button type="submit" className="bg-[#ea384c] hover:bg-[#d02d3f]">
-                  {editingTemplate ? 'Salvar Alterações' : 'Criar Template'}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select
+                value={newTemplate.status}
+                onValueChange={(value) => handleSelectChange(value, "status")}
+              >
+                <SelectTrigger className="bg-[#1A1F2C] border-gray-700">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-[#1A1F2C] border-gray-700">
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isPremium"
+                checked={newTemplate.premium}
+                onCheckedChange={(checked) =>
+                  setNewTemplate({
+                    ...newTemplate,
+                    premium: checked as boolean,
+                  })
+                }
+              />
+              <Label htmlFor="isPremium">Template Premium</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (isAddDialogOpen) setIsAddDialogOpen(false);
+                if (isEditDialogOpen) setIsEditDialogOpen(false);
+                resetNewTemplate();
+              }}
+              className="border-gray-700 text-white hover:bg-[#1A1F2C] hover:text-white"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={isAddDialogOpen ? handleAddTemplate : handleEditTemplate}
+              className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+            >
+              {isAddDialogOpen ? "Adicionar" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Template Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="bg-[#222222] text-white">
+          <DialogHeader>
+            <DialogTitle>Remover Template</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Tem certeza que deseja remover este template?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {selectedTemplate && (
+              <div className="flex items-center">
+                <div className="h-10 w-10 rounded bg-gray-800 mr-3">
+                  <img
+                    src={selectedTemplate.imageUrl}
+                    alt={selectedTemplate.title}
+                    className="h-full w-full object-cover rounded"
+                  />
+                </div>
+                <div>
+                  <div className="font-medium">{selectedTemplate.title}</div>
+                  <div className="text-xs text-gray-400">
+                    {selectedTemplate.category} • {selectedTemplate.downloads} downloads
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="border-gray-700 text-white hover:bg-[#1A1F2C] hover:text-white"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleDeleteTemplate}
+              variant="destructive"
+              className="bg-[#ea384c] hover:bg-[#ea384c]/80"
+            >
+              Remover
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
