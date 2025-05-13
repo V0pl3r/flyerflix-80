@@ -1,5 +1,6 @@
 
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const Hero = () => {
   return (
@@ -28,11 +29,15 @@ const Hero = () => {
             cartazes e posts. Crie materiais impactantes em minutos.
           </p>
           <div className="flex flex-wrap gap-4">
-            <Button className="flyerflix-btn-primary text-base">
-              Experimente grátis
+            <Button className="flyerflix-btn-primary text-base" asChild>
+              <Link to="/register">
+                Experimente grátis
+              </Link>
             </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white text-base">
-              Saiba mais
+            <Button variant="outline" className="bg-white/10 border-white/20 hover:bg-white/20 text-white text-base" asChild>
+              <a href="#pricing">
+                Saiba mais
+              </a>
             </Button>
           </div>
         </div>

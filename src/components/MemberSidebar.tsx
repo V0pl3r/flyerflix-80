@@ -3,18 +3,22 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { User, Download, Heart, History, Settings, ChevronLeft, ChevronRight, Infinity } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { User, Home, Download, Heart, History, Settings, ChevronLeft, ChevronRight, Infinity } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 type UserType = {
   name: string;
   plan: string;
   downloads: number;
   maxDownloads: number | 'unlimited';
+  avatarUrl?: string;
 };
 
 const MemberSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
+  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
   const location = useLocation();
   
   useEffect(() => {
@@ -26,6 +30,29 @@ const MemberSidebar = () => {
   
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const getFirstName = (fullName: string) => {
+    return fullName.split(' ')[0];
+  };
+  
+  const handleAvatarClick = () => {
+    setIsAvatarDialogOpen(true);
+  };
+
+  const handleAvatarChange = (url: string) => {
+    if (user) {
+      const updatedUser = { ...user, avatarUrl: url };
+      setUser(updatedUser);
+      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+      
+      toast({
+        title: "Avatar atualizado",
+        description: "Sua foto de perfil foi alterada com sucesso.",
+      });
+      
+      setIsAvatarDialogOpen(false);
+    }
   };
   
   if (!user) return null;
@@ -55,42 +82,32 @@ const MemberSidebar = () => {
         {/* User info */}
         <div className="p-4 border-b border-white/10">
           {!collapsed ? (
-            <div className="flex flex-col">
-              <span className="text-sm text-white/70">Bem-vindo</span>
-              <span className="text-white font-medium truncate">{user.name}</span>
-              <div className="mt-2">
-                <Badge variant="default" className="bg-flyerflix-red font-medium text-white">
-                  {user.plan === 'ultimate' ? 'Plano Ultimate' : 'Plano Grátis'}
-                </Badge>
+            <div className="flex items-center">
+              <div className="cursor-pointer" onClick={handleAvatarClick}>
+                <Avatar className="h-12 w-12 border-2 border-flyerflix-red">
+                  <AvatarImage src={user.avatarUrl} alt={user.name} />
+                  <AvatarFallback className="bg-flyerflix-black text-flyerflix-red">
+                    {user.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
               </div>
-              
-              {user.plan === 'free' && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs text-white/70 mb-1">
-                    <span>Downloads hoje</span>
-                    <span>{user.downloads}/{user.maxDownloads}</span>
-                  </div>
-                  <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-flyerflix-red"
-                      style={{ 
-                        width: `${Math.min((user.downloads / (user.maxDownloads as number)) * 100, 100)}%` 
-                      }}
-                    ></div>
-                  </div>
+              <div className="ml-3">
+                <div className="font-medium text-white">{getFirstName(user.name)}</div>
+                <div>
+                  <Badge variant="default" className="bg-flyerflix-red font-medium text-white">
+                    {user.plan === 'ultimate' ? 'Plano Ultimate' : 'Plano Grátis'}
+                  </Badge>
                 </div>
-              )}
-              
-              {user.plan === 'ultimate' && (
-                <div className="flex items-center mt-3 text-sm text-white/70">
-                  <Infinity size={16} className="mr-1.5" />
-                  <span>Downloads ilimitados</span>
-                </div>
-              )}
+              </div>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <User size={24} className="text-white/70" />
+              <Avatar className="h-10 w-10 border-2 border-flyerflix-red cursor-pointer" onClick={handleAvatarClick}>
+                <AvatarImage src={user.avatarUrl} alt={user.name} />
+                <AvatarFallback className="bg-flyerflix-black text-flyerflix-red">
+                  {user.name.substring(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               {user.plan === 'ultimate' ? (
                 <Badge variant="default" className="bg-flyerflix-red text-white mt-2 px-1">
                   <Infinity size={12} />
@@ -102,11 +119,48 @@ const MemberSidebar = () => {
               )}
             </div>
           )}
+          
+          {!collapsed && user.plan === 'free' && (
+            <div className="mt-3">
+              <div className="flex justify-between text-xs text-white/70 mb-1">
+                <span>Downloads hoje</span>
+                <span>{user.downloads}/{user.maxDownloads}</span>
+              </div>
+              <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-flyerflix-red"
+                  style={{ 
+                    width: `${Math.min((user.downloads / (user.maxDownloads as number)) * 100, 100)}%` 
+                  }}
+                ></div>
+              </div>
+            </div>
+          )}
+          
+          {!collapsed && user.plan === 'ultimate' && (
+            <div className="flex items-center mt-3 text-sm text-white/70">
+              <Infinity size={16} className="mr-1.5" />
+              <span>Downloads ilimitados</span>
+            </div>
+          )}
         </div>
         
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           <ul className="space-y-1 px-2">
+            <li>
+              <Link 
+                to="/dashboard" 
+                className={`flex items-center px-3 py-2 rounded-lg transition ${
+                  isActive('/dashboard')
+                    ? 'bg-flyerflix-red text-white'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Home size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
+                {!collapsed && <span>Home</span>}
+              </Link>
+            </li>
             <li>
               <Link 
                 to="/perfil" 

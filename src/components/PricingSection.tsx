@@ -1,6 +1,7 @@
 
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 const PricingSection = () => {
   const plans = [
@@ -18,6 +19,7 @@ const PricingSection = () => {
         { text: 'Integração com Canva', included: false },
       ],
       buttonText: 'Começar agora',
+      buttonLink: '/register',
       featured: false
     },
     {
@@ -35,6 +37,7 @@ const PricingSection = () => {
         { text: 'Integração com Canva', included: true },
       ],
       buttonText: 'Assinar agora',
+      buttonLink: 'https://stripe.com/checkout/flyerflix-ultimate',
       featured: true
     }
   ];
@@ -84,8 +87,17 @@ const PricingSection = () => {
               
               <Button 
                 className={plan.featured ? "flyerflix-btn-primary w-full" : "flyerflix-btn-secondary w-full"}
+                asChild
               >
-                {plan.buttonText}
+                {plan.id === 'free' ? (
+                  <Link to={plan.buttonLink}>
+                    {plan.buttonText}
+                  </Link>
+                ) : (
+                  <a href={plan.buttonLink} target="_blank" rel="noopener noreferrer">
+                    {plan.buttonText}
+                  </a>
+                )}
               </Button>
             </div>
           ))}

@@ -12,7 +12,8 @@ import {
   Settings, 
   HelpCircle,
   Menu,
-  X
+  X,
+  CreditCard
 } from 'lucide-react';
 
 const AdminLayout = () => {
@@ -77,6 +78,7 @@ const menuItems = [
   { label: 'Dashboard', path: '', icon: LayoutDashboard },
   { label: 'Templates', path: '/templates', icon: FileType },
   { label: 'Categorias', path: '/categorias', icon: Tag },
+  { label: 'Planos e Preços', path: '/planos', icon: CreditCard },
   { label: 'Usuários', path: '/usuarios', icon: Users },
   { label: 'Assinaturas', path: '/assinaturas', icon: Database },
   { label: 'Financeiro', path: '/financeiro', icon: TrendingUp },

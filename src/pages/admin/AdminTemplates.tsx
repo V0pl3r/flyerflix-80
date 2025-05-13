@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { PlusCircle, Pencil, Trash2, Link, ExternalLink } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Link, ExternalLink, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -34,6 +34,8 @@ interface Template {
   status: string;
   premium: boolean;
   canvaLink: string;
+  isForFreePlan: boolean;
+  isForUltimatePlan: boolean;
 }
 
 const AdminTemplates = () => {
@@ -47,6 +49,8 @@ const AdminTemplates = () => {
       status: "ativo",
       premium: true,
       canvaLink: "https://canva.com/design/template1",
+      isForFreePlan: false,
+      isForUltimatePlan: true,
     },
     {
       id: "2",
@@ -57,6 +61,8 @@ const AdminTemplates = () => {
       status: "ativo",
       premium: true,
       canvaLink: "https://canva.com/design/template2",
+      isForFreePlan: false,
+      isForUltimatePlan: true,
     },
     {
       id: "3",
@@ -67,6 +73,8 @@ const AdminTemplates = () => {
       status: "ativo",
       premium: false,
       canvaLink: "https://canva.com/design/template3",
+      isForFreePlan: true,
+      isForUltimatePlan: true,
     },
     {
       id: "4",
@@ -77,6 +85,8 @@ const AdminTemplates = () => {
       status: "inativo",
       premium: false,
       canvaLink: "https://canva.com/design/template4",
+      isForFreePlan: true,
+      isForUltimatePlan: true,
     }
   ]);
 
@@ -94,6 +104,8 @@ const AdminTemplates = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const [newTemplate, setNewTemplate] = useState<Template>({
     id: "",
@@ -104,7 +116,42 @@ const AdminTemplates = () => {
     status: "ativo",
     premium: false,
     canvaLink: "",
+    isForFreePlan: false,
+    isForUltimatePlan: true,
   });
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      
+      // Check file format
+      const allowedFormats = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedFormats.includes(file.type)) {
+        toast("Formato inválido", {
+          description: "Por favor, selecione uma imagem JPG, PNG ou WEBP.",
+        });
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      // Create a preview
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setImagePreview(event.target.result as string);
+          
+          // In a real application, you would upload this to a storage service
+          // and get back a URL. Here we'll just use the data URL as placeholder.
+          setNewTemplate({
+            ...newTemplate,
+            imageUrl: event.target.result as string,
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -117,13 +164,36 @@ const AdminTemplates = () => {
     setNewTemplate({ ...newTemplate, [field]: value });
   };
 
-  const handleAddTemplate = () => {
-    if (!newTemplate.title || !newTemplate.category || !newTemplate.canvaLink) {
-      toast("Erro", {
-        description: "Preencha todos os campos obrigatórios.",
-      });
-      return;
+  const handleCheckboxChange = (checked: boolean, field: keyof Template) => {
+    setNewTemplate({ ...newTemplate, [field]: checked });
+  };
+
+  const validateTemplate = () => {
+    if (!newTemplate.title) {
+      toast("Campo obrigatório", { description: "O título do template é obrigatório." });
+      return false;
     }
+    
+    if (!newTemplate.category) {
+      toast("Campo obrigatório", { description: "A categoria do template é obrigatória." });
+      return false;
+    }
+    
+    if (!newTemplate.canvaLink) {
+      toast("Campo obrigatório", { description: "O link do Canva é obrigatório." });
+      return false;
+    }
+    
+    if (isAddDialogOpen && !selectedImage) {
+      toast("Imagem obrigatória", { description: "Adicione uma imagem de capa para o template." });
+      return false;
+    }
+    
+    return true;
+  };
+
+  const handleAddTemplate = () => {
+    if (!validateTemplate()) return;
 
     const templateToAdd: Template = {
       ...newTemplate,
@@ -139,12 +209,7 @@ const AdminTemplates = () => {
   };
 
   const handleEditTemplate = () => {
-    if (!selectedTemplate || !newTemplate.title || !newTemplate.category || !newTemplate.canvaLink) {
-      toast("Erro", {
-        description: "Preencha todos os campos obrigatórios.",
-      });
-      return;
-    }
+    if (!selectedTemplate || !validateTemplate()) return;
 
     const updatedTemplates = templates.map((template) =>
       template.id === selectedTemplate.id ? { ...newTemplate, id: template.id } : template
@@ -153,6 +218,7 @@ const AdminTemplates = () => {
     setTemplates(updatedTemplates);
     setIsEditDialogOpen(false);
     resetNewTemplate();
+    setImagePreview(null);
     toast("Template atualizado", {
       description: `${newTemplate.title} foi atualizado com sucesso.`,
     });
@@ -182,12 +248,17 @@ const AdminTemplates = () => {
       status: "ativo",
       premium: false,
       canvaLink: "",
+      isForFreePlan: false,
+      isForUltimatePlan: true,
     });
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const openEditDialog = (template: Template) => {
     setSelectedTemplate(template);
     setNewTemplate({ ...template });
+    setImagePreview(template.imageUrl);
     setIsEditDialogOpen(true);
   };
 
@@ -227,6 +298,20 @@ const AdminTemplates = () => {
         <Badge variant={value ? "default" : "outline"} className={value ? "bg-amber-600 text-white hover:bg-amber-700" : "text-gray-300"}>
           {value ? "Premium" : "Grátis"}
         </Badge>
+      ),
+    },
+    {
+      key: "isForFreePlan",
+      title: "Plano",
+      render: (_: any, template: Template) => (
+        <div className="space-y-1">
+          <Badge variant={template.isForFreePlan ? "default" : "outline"} className="mr-1 bg-green-600">
+            Grátis
+          </Badge>
+          <Badge variant={template.isForUltimatePlan ? "default" : "outline"} className="bg-purple-600">
+            Ultimate
+          </Badge>
+        </div>
       ),
     },
     {
@@ -298,7 +383,10 @@ const AdminTemplates = () => {
         onOpenChange={(open) => {
           if (isAddDialogOpen) setIsAddDialogOpen(open);
           if (isEditDialogOpen) setIsEditDialogOpen(open);
-          if (!open) resetNewTemplate();
+          if (!open) {
+            resetNewTemplate();
+            setImagePreview(null);
+          }
         }}
       >
         <DialogContent className="bg-[#222222] text-white max-w-md">
@@ -320,6 +408,54 @@ const AdminTemplates = () => {
                 className="bg-[#1A1F2C] border-gray-700"
               />
             </div>
+
+            {/* Image Upload Section */}
+            <div className="grid gap-2">
+              <Label htmlFor="templateImage">Imagem de Capa* (9:16)</Label>
+              <div className="flex flex-col items-center p-4 border border-dashed border-gray-700 rounded-md bg-[#1A1F2C]">
+                {imagePreview ? (
+                  <div className="relative w-32 h-56 mb-2">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover rounded" 
+                    />
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={() => {
+                        setSelectedImage(null);
+                        setImagePreview(null);
+                      }}
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-56 bg-gray-800 rounded flex items-center justify-center mb-2">
+                    <Upload className="h-8 w-8 text-gray-500" />
+                  </div>
+                )}
+                <Input
+                  id="templateImage"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <Label 
+                  htmlFor="templateImage" 
+                  className="cursor-pointer bg-[#2A2F3C] px-3 py-1 rounded text-sm hover:bg-[#3A3F4C] transition-colors"
+                >
+                  {imagePreview ? "Trocar Imagem" : "Selecionar Imagem"}
+                </Label>
+                <p className="text-xs text-gray-400 mt-1">
+                  Formatos: JPG, PNG, WEBP. Proporção: 9:16
+                </p>
+              </div>
+            </div>
+            
             <div className="grid gap-2">
               <Label htmlFor="category">Categoria*</Label>
               <Select
@@ -338,6 +474,7 @@ const AdminTemplates = () => {
                 </SelectContent>
               </Select>
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="canvaLink">Link do Canva*</Label>
               <div className="flex items-center space-x-2">
@@ -351,6 +488,7 @@ const AdminTemplates = () => {
                 />
               </div>
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -366,15 +504,37 @@ const AdminTemplates = () => {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-3">
+              <Label>Disponibilidade por Plano</Label>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isForFreePlan"
+                  checked={newTemplate.isForFreePlan}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(!!checked, "isForFreePlan")
+                  }
+                />
+                <Label htmlFor="isForFreePlan" className="text-sm">Disponível para Plano Grátis</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="isForUltimatePlan"
+                  checked={newTemplate.isForUltimatePlan}
+                  onCheckedChange={(checked) =>
+                    handleCheckboxChange(!!checked, "isForUltimatePlan")
+                  }
+                />
+                <Label htmlFor="isForUltimatePlan" className="text-sm">Disponível para Plano Ultimate</Label>
+              </div>
+            </div>
+            
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isPremium"
                 checked={newTemplate.premium}
                 onCheckedChange={(checked) =>
-                  setNewTemplate({
-                    ...newTemplate,
-                    premium: checked as boolean,
-                  })
+                  handleCheckboxChange(!!checked, "premium")
                 }
               />
               <Label htmlFor="isPremium">Template Premium</Label>

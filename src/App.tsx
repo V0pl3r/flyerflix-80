@@ -26,6 +26,7 @@ import AdminFinancial from "./pages/admin/AdminFinancial";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminSupport from "./pages/admin/AdminSupport";
+import AdminPlans from "./pages/admin/AdminPlans";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/favoritos" element={<Favorites />} />
           <Route path="/historico" element={<History />} />
           <Route path="/configuracoes" element={<Settings />} />
+          <Route path="/area-membro" element={<Dashboard />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>
@@ -57,6 +59,7 @@ const App = () => (
             <Route path="relatorios" element={<AdminReports />} />
             <Route path="configuracoes" element={<AdminSettings />} />
             <Route path="suporte" element={<AdminSupport />} />
+            <Route path="planos" element={<AdminPlans />} />
           </Route>
           
           {/* Catch-all */}
