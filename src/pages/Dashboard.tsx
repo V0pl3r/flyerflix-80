@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import MemberLayout from '../components/MemberLayout';
 import TemplateCard from '../components/TemplateCard';
@@ -7,17 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Infinity, Heart, ExternalLink } from 'lucide-react';
-import { featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
-
-type Template = {
-  id: string;
-  title: string;
-  imageUrl: string;
-  isPremium?: boolean;
-  category?: string;
-  downloads?: number;
-  canvaUrl?: string;
-};
+import { featuredTemplates, newTemplates, popularTemplates, Template } from '../data/templates';
 
 type UserType = {
   name: string;

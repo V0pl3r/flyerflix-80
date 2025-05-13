@@ -4,6 +4,7 @@ export type Template = {
   imageUrl: string;
   category: string;
   canvaUrl?: string;
+  isPremium?: boolean;
 };
 
 export const featuredTemplates: Template[] = [
