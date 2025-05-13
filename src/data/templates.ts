@@ -1,3 +1,4 @@
+
 export type Template = {
   id: string;
   title: string;
@@ -5,6 +6,7 @@ export type Template = {
   category: string;
   canvaUrl?: string;
   isPremium?: boolean;
+  downloads?: number;
 };
 
 export const featuredTemplates: Template[] = [
