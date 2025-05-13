@@ -30,7 +30,7 @@ const Hero = () => {
           </p>
           <div className="flex flex-wrap gap-4">
             <Button 
-              className="flyerflix-btn-primary text-base hover:scale-105 transition-all duration-300 animate-pulse" 
+              className="flyerflix-btn-primary text-base hover:scale-110 transition-transform duration-300 animate-pulse-slow" 
               asChild
             >
               <Link to="/register">

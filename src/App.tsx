@@ -14,6 +14,8 @@ import Profile from "./pages/Profile";
 import Downloads from "./pages/Downloads";
 import Favorites from "./pages/Favorites";
 import History from "./pages/History";
+import TermsOfUse from "./pages/TermsOfUse";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 // Admin imports
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -47,6 +49,8 @@ const App = () => (
           <Route path="/historico" element={<History />} />
           <Route path="/configuracoes" element={<Settings />} />
           <Route path="/area-membro" element={<Dashboard />} />
+          <Route path="/termos-de-uso" element={<TermsOfUse />} />
+          <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
           
           {/* Admin Routes */}
           <Route path="/admin" element={<AdminLayout />}>

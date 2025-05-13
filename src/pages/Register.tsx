@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,8 @@ const Register = () => {
     planChoice: 'free',
   });
   
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,7 +53,7 @@ const Register = () => {
     if (!formData.acceptTerms) {
       toast({
         title: "Erro ao criar conta",
-        description: "Você precisa aceitar os termos de uso.",
+        description: "Você precisa aceitar os termos de uso e política de privacidade.",
         variant: "destructive",
       });
       return;
@@ -128,34 +131,54 @@ const Register = () => {
               <label htmlFor="password" className="block text-sm font-medium text-white/70 mb-1">
                 Senha
               </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                className="bg-[#333] border-[#444] text-white"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="bg-[#333] border-[#444] text-white pr-10"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                />
+                <button 
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
             
             <div>
               <label htmlFor="confirmPassword" className="block text-sm font-medium text-white/70 mb-1">
                 Confirmar senha
               </label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                className="bg-[#333] border-[#444] text-white"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  className="bg-[#333] border-[#444] text-white pr-10"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  minLength={6}
+                />
+                <button 
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
             </div>
           </div>
           
@@ -200,7 +223,7 @@ const Register = () => {
               className="data-[state=checked]:bg-flyerflix-red"
             />
             <label htmlFor="acceptTerms" className="text-sm font-medium text-white/70 cursor-pointer">
-              Concordo com os <Link to="/termos" className="text-flyerflix-red hover:underline">termos de uso</Link> e <Link to="/privacidade" className="text-flyerflix-red hover:underline">política de privacidade</Link>
+              Concordo com os <Link to="/termos-de-uso" className="text-flyerflix-red hover:underline">termos de uso</Link> e <Link to="/politica-de-privacidade" className="text-flyerflix-red hover:underline">política de privacidade</Link>
             </label>
           </div>
           
