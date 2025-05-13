@@ -1,15 +1,6 @@
-
 import { Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-type Template = {
-  id: number | string;  
-  title: string;
-  imageUrl: string;
-  category?: string;    
-  isPremium?: boolean;
-  canvaUrl?: string;
-};
+import { Template } from '../data/templates';
 
 interface TemplateCardProps {
   template: Template;

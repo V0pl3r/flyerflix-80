@@ -1,4 +1,12 @@
-export const featuredTemplates = [
+export type Template = {
+  id: string;
+  title: string;
+  imageUrl: string;
+  category: string;
+  canvaUrl?: string;
+};
+
+export const featuredTemplates: Template[] = [
   {
     id: "1",
     title: "Neon Party Flyer",
@@ -49,7 +57,7 @@ export const featuredTemplates = [
   }
 ];
 
-export const newTemplates = [
+export const newTemplates: Template[] = [
   {
     id: "9",
     title: "Spring Fashion Show",
@@ -100,7 +108,7 @@ export const newTemplates = [
   }
 ];
 
-export const popularTemplates = [
+export const popularTemplates: Template[] = [
   {
     id: "17",
     title: "House Music Festival",

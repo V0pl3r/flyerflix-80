@@ -5,10 +5,10 @@ import MemberLayout from '../components/MemberLayout';
 import { Button } from '@/components/ui/button';
 import { Heart, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
+import { featuredTemplates, newTemplates, popularTemplates, Template } from '../data/templates';
 
 // Combine all template sources to find favorites
-const allTemplates = [...featuredTemplates, ...newTemplates, ...popularTemplates].map(template => ({
+const allTemplates = [...featuredTemplates, ...newTemplates, ...popularTemplates].map((template: Template) => ({
   ...template,
   canvaUrl: template.canvaUrl || `https://canva.com/template/${template.id}`
 }));
