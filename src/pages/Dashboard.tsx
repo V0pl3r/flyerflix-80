@@ -27,11 +27,21 @@ type UserType = {
   maxDownloads: number | 'unlimited';
 };
 
+type DownloadHistoryItem = {
+  id: string;
+  templateId: string;
+  templateTitle: string;
+  imageUrl: string;
+  downloadDate: string;
+  canvaUrl: string;
+};
+
 const Dashboard = () => {
   const [user, setUser] = useState<UserType | null>(null);
   const [downloadLimitReached, setDownloadLimitReached] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -40,10 +50,16 @@ const Dashboard = () => {
       setUser(JSON.parse(userData));
     }
     
-    // Carregar favoritos do localStorage
+    // Load favorites from localStorage
     const storedFavorites = localStorage.getItem('flyerflix-favorites');
     if (storedFavorites) {
       setFavorites(JSON.parse(storedFavorites));
+    }
+    
+    // Load download history from localStorage
+    const storedDownloads = localStorage.getItem('flyerflix-downloads');
+    if (storedDownloads) {
+      setDownloads(JSON.parse(storedDownloads));
     }
   }, []);
   
@@ -57,7 +73,7 @@ const Dashboard = () => {
       return;
     }
     
-    // Adicionar dados extras ao template selecionado para o modal
+    // Add extra data to selected template for modal
     const templateWithExtras = {
       ...template,
       category: template.category || 'Geral',
@@ -67,8 +83,31 @@ const Dashboard = () => {
     
     setSelectedTemplate(templateWithExtras);
     
-    // Registrar visualização no histórico (simulado)
-    console.log('Template visualizado:', template.id);
+    // Add to view history
+    addToHistory(templateWithExtras, 'view');
+  };
+  
+  const addToHistory = (template: Template, actionType: 'download' | 'view' | 'favorite') => {
+    // Get the current history or initialize empty array
+    const historyString = localStorage.getItem('flyerflix-history');
+    const history = historyString ? JSON.parse(historyString) : [];
+    
+    // Add new item to history
+    const historyItem = {
+      id: Date.now().toString(),
+      type: actionType,
+      templateId: template.id,
+      templateTitle: template.title,
+      imageUrl: template.imageUrl,
+      date: new Date().toISOString(),
+      canvaUrl: template.canvaUrl || 'https://www.canva.com'
+    };
+    
+    // Add to beginning of array (most recent first)
+    const updatedHistory = [historyItem, ...history];
+    
+    // Save back to localStorage (limit to 100 items to prevent overflow)
+    localStorage.setItem('flyerflix-history', JSON.stringify(updatedHistory.slice(0, 100)));
   };
   
   const handleDownload = () => {
@@ -90,6 +129,23 @@ const Dashboard = () => {
       localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
       setUser(updatedUser);
     }
+    
+    // Add to download history
+    const newDownload = {
+      id: Date.now().toString(),
+      templateId: selectedTemplate.id,
+      templateTitle: selectedTemplate.title,
+      imageUrl: selectedTemplate.imageUrl,
+      downloadDate: new Date().toISOString(),
+      canvaUrl: selectedTemplate.canvaUrl || 'https://www.canva.com'
+    };
+    
+    const updatedDownloads = [newDownload, ...downloads];
+    setDownloads(updatedDownloads);
+    localStorage.setItem('flyerflix-downloads', JSON.stringify(updatedDownloads));
+    
+    // Add to general history
+    addToHistory(selectedTemplate, 'download');
     
     // Process download - redirect to Canva
     if (selectedTemplate.canvaUrl) {
@@ -115,12 +171,16 @@ const Dashboard = () => {
         title: "Removido dos favoritos",
         description: `${template.title} foi removido dos seus favoritos.`,
       });
+      // Add to history
+      addToHistory(template, 'favorite');
     } else {
       updatedFavorites = [...favorites, template.id];
       toast({
         title: "Adicionado aos favoritos",
         description: `${template.title} foi adicionado aos seus favoritos.`,
       });
+      // Add to history
+      addToHistory(template, 'favorite');
     }
     
     setFavorites(updatedFavorites);
@@ -312,29 +372,34 @@ const Dashboard = () => {
       <Dialog open={downloadLimitReached} onOpenChange={setDownloadLimitReached}>
         <DialogContent className="bg-[#1e1e1e] border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Limite de downloads atingido</DialogTitle>
-            <DialogDescription className="text-white/70">
-              Você atingiu seu limite diário de downloads gratuitos.
+            <DialogTitle className="text-xl text-flyerflix-red font-bold">⚠️ Limite diário atingido!</DialogTitle>
+            <DialogDescription className="text-white/90 text-base mt-2">
+              Você já usou seus {user?.maxDownloads} downloads gratuitos hoje.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4 flex flex-col items-center">
-            <Lock className="text-flyerflix-red h-16 w-16 mb-3" />
-            <p className="text-center">
-              Seu limite será renovado em 
-              <span className="text-flyerflix-red font-bold mx-1">
-                {new Date(new Date().setHours(24, 0, 0, 0)).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-              </span>
-              ou faça upgrade para downloads ilimitados.
+          <div className="py-4">
+            <p className="text-white mb-4 text-base">
+              Quer desbloquear acesso ilimitado a todos os templates premium e baixar sem limites?
+            </p>
+            <p className="text-flyerflix-red font-medium text-lg mb-6">
+              Assine o plano Ultimate e comece agora!
             </p>
           </div>
           
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDownloadLimitReached(false)}>
-              Voltar mais tarde
+          <DialogFooter className="flex flex-col space-y-3 sm:space-y-0">
+            <Button 
+              className="bg-flyerflix-red hover:bg-red-700 text-base py-6 font-medium w-full sm:w-auto"
+              onClick={handleUpgrade}
+            >
+              🔓 Atualizar para Ultimate
             </Button>
-            <Button className="bg-flyerflix-red hover:bg-red-700" onClick={handleUpgrade}>
-              Fazer upgrade para Ultimate
+            <Button 
+              variant="outline" 
+              onClick={() => setDownloadLimitReached(false)} 
+              className="text-white border-white/20 hover:bg-white/10 w-full sm:w-auto"
+            >
+              Voltar mais tarde
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -20,7 +20,7 @@ interface TemplateCardProps {
 const TemplateCard = ({ template, onClick, isPremium = false }: TemplateCardProps) => {
   return (
     <div 
-      className="template-card group relative cursor-pointer"
+      className="template-card group relative cursor-pointer transition-all duration-300"
       onClick={onClick}
     >
       <img 
@@ -31,7 +31,7 @@ const TemplateCard = ({ template, onClick, isPremium = false }: TemplateCardProp
       
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3 rounded">
         <p className="text-white font-medium text-sm">{template.title}</p>
-        <p className="text-white/70 text-xs mt-1">Clique para baixar</p>
+        <p className="text-white/70 text-xs mt-1">Clique para visualizar</p>
       </div>
       
       {/* Premium badge */}

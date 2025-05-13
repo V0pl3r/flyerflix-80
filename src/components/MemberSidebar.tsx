@@ -15,7 +15,11 @@ type UserType = {
   avatarUrl?: string;
 };
 
-const MemberSidebar = () => {
+interface MemberSidebarProps {
+  isMobileDrawer?: boolean;
+}
+
+const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
@@ -38,6 +42,12 @@ const MemberSidebar = () => {
   
   const handleAvatarClick = () => {
     setIsAvatarDialogOpen(true);
+    
+    // Simple mock dialog to update avatar URL
+    const newAvatarUrl = prompt('Enter a new avatar URL:', user?.avatarUrl || '');
+    if (newAvatarUrl && user) {
+      handleAvatarChange(newAvatarUrl);
+    }
   };
 
   const handleAvatarChange = (url: string) => {
@@ -59,29 +69,31 @@ const MemberSidebar = () => {
   
   return (
     <aside 
-      className={`h-screen bg-[#0b0b0b] border-r border-white/10 fixed left-0 top-0 z-30 transition-all duration-300 ${
-        collapsed ? 'w-16' : 'w-64'
+      className={`h-screen bg-[#0b0b0b] border-r border-white/10 ${isMobileDrawer ? 'relative w-full' : 'fixed left-0 top-0 z-30'} transition-all duration-300 ${
+        collapsed && !isMobileDrawer ? 'w-16' : 'w-64'
       }`}
     >
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="px-4 py-5 flex items-center justify-between border-b border-white/10">
-          {!collapsed && (
+          {(!collapsed || isMobileDrawer) && (
             <Link to="/dashboard" className="text-flyerflix-red text-xl font-bold">
               FLYERFLIX
             </Link>
           )}
-          <button 
-            onClick={() => setCollapsed(prev => !prev)} 
-            className="text-white/70 hover:text-white p-1 rounded-full hover:bg-white/10 transition"
-          >
-            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
+          {!isMobileDrawer && (
+            <button 
+              onClick={() => setCollapsed(prev => !prev)} 
+              className="text-white/70 hover:text-white p-1 rounded-full hover:bg-white/10 transition"
+            >
+              {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          )}
         </div>
         
         {/* User info */}
         <div className="p-4 border-b border-white/10">
-          {!collapsed ? (
+          {(!collapsed || isMobileDrawer) ? (
             <div className="flex items-center">
               <div className="cursor-pointer" onClick={handleAvatarClick}>
                 <Avatar className="h-12 w-12 border-2 border-flyerflix-red">
@@ -120,7 +132,7 @@ const MemberSidebar = () => {
             </div>
           )}
           
-          {!collapsed && user.plan === 'free' && (
+          {(!collapsed || isMobileDrawer) && user.plan === 'free' && (
             <div className="mt-3">
               <div className="flex justify-between text-xs text-white/70 mb-1">
                 <span>Downloads hoje</span>
@@ -137,7 +149,7 @@ const MemberSidebar = () => {
             </div>
           )}
           
-          {!collapsed && user.plan === 'ultimate' && (
+          {(!collapsed || isMobileDrawer) && user.plan === 'ultimate' && (
             <div className="flex items-center mt-3 text-sm text-white/70">
               <Infinity size={16} className="mr-1.5" />
               <span>Downloads ilimitados</span>
@@ -152,13 +164,13 @@ const MemberSidebar = () => {
               <Link 
                 to="/dashboard" 
                 className={`flex items-center px-3 py-2 rounded-lg transition ${
-                  isActive('/dashboard')
+                  isActive('/dashboard') || isActive('/area-membro')
                     ? 'bg-flyerflix-red text-white'
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Home size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
-                {!collapsed && <span>Home</span>}
+                <Home size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
+                {(!collapsed || isMobileDrawer) && <span>Home</span>}
               </Link>
             </li>
             <li>
@@ -170,8 +182,8 @@ const MemberSidebar = () => {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <User size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
-                {!collapsed && <span>Meu Perfil</span>}
+                <User size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
+                {(!collapsed || isMobileDrawer) && <span>Meu Perfil</span>}
               </Link>
             </li>
             <li>
@@ -183,8 +195,8 @@ const MemberSidebar = () => {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Download size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
-                {!collapsed && <span>Meus Downloads</span>}
+                <Download size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
+                {(!collapsed || isMobileDrawer) && <span>Meus Downloads</span>}
               </Link>
             </li>
             <li>
@@ -196,8 +208,8 @@ const MemberSidebar = () => {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Heart size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
-                {!collapsed && <span>Favoritos</span>}
+                <Heart size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
+                {(!collapsed || isMobileDrawer) && <span>Favoritos</span>}
               </Link>
             </li>
             <li>
@@ -209,8 +221,8 @@ const MemberSidebar = () => {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <History size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
-                {!collapsed && <span>Histórico</span>}
+                <History size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
+                {(!collapsed || isMobileDrawer) && <span>Histórico</span>}
               </Link>
             </li>
             <li>
@@ -222,15 +234,15 @@ const MemberSidebar = () => {
                     : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
               >
-                <Settings size={18} className={collapsed ? 'mx-auto' : 'mr-3'} />
-                {!collapsed && <span>Configurações</span>}
+                <Settings size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
+                {(!collapsed || isMobileDrawer) && <span>Configurações</span>}
               </Link>
             </li>
           </ul>
         </nav>
         
         {/* Upgrade button for free plan */}
-        {user.plan === 'free' && !collapsed && (
+        {user.plan === 'free' && (!collapsed || isMobileDrawer) && (
           <div className="p-4 border-t border-white/10">
             <Button className="w-full bg-gradient-to-r from-flyerflix-red to-red-700 hover:from-red-700 hover:to-flyerflix-red">
               Upgrade para Ultimate
@@ -239,7 +251,7 @@ const MemberSidebar = () => {
         )}
         
         {/* Mini upgrade button when collapsed */}
-        {user.plan === 'free' && collapsed && (
+        {user.plan === 'free' && collapsed && !isMobileDrawer && (
           <div className="p-2 border-t border-white/10">
             <Button className="w-full h-10 p-0 bg-gradient-to-r from-flyerflix-red to-red-700 hover:from-red-700 hover:to-flyerflix-red">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

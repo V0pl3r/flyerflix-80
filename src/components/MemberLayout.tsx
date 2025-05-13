@@ -2,8 +2,9 @@
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
-import { X } from 'lucide-react';
+import { X, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 
 interface MemberLayoutProps {
@@ -15,6 +16,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const [showBanner, setShowBanner] = useState(false);
   const [isPlanFree, setIsPlanFree] = useState(false);
   const [firstVisit, setFirstVisit] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -47,6 +49,21 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     } else {
       setFirstVisit(false);
     }
+    
+    // Check if user is on mobile
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Initial check
+    checkIsMobile();
+    
+    // Add resize listener
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
   }, [navigate, showWelcomeMessage]);
   
   const handleUpgrade = () => {
@@ -63,13 +80,29 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
 
   return (
     <div className="min-h-screen bg-flyerflix-black text-white">
-      {/* Sidebar */}
-      <MemberSidebar />
+      {/* Sidebar - Desktop */}
+      {!isMobile && <MemberSidebar />}
       
       {/* Main Content */}
-      <div className="ml-16 md:ml-64 min-h-screen">
+      <div className={!isMobile ? "ml-16 md:ml-64 min-h-screen" : "min-h-screen"}>
         {/* Top navigation bar */}
-        <header className="bg-[#0b0b0b]/90 backdrop-blur-sm border-b border-white/10 h-16 flex items-center justify-end px-6 sticky top-0 z-20">
+        <header className="bg-[#0b0b0b]/90 backdrop-blur-sm border-b border-white/10 h-16 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20">
+          {/* Mobile menu */}
+          {isMobile && (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white">
+                  <Menu className="w-6 h-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#0b0b0b] border-r border-white/10 p-0 w-64">
+                <MemberSidebar isMobileDrawer />
+              </SheetContent>
+            </Sheet>
+          )}
+          
+          <div className="md:hidden font-bold text-flyerflix-red text-lg">FLYERFLIX</div>
+          
           <div className="flex items-center space-x-4">
             <Button
               variant="ghost" 
@@ -83,7 +116,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
         
         {/* Free plan banner */}
         {showBanner && isPlanFree && (
-          <div className="bg-gradient-to-r from-flyerflix-red/20 to-black px-6 py-4 relative">
+          <div className="bg-gradient-to-r from-flyerflix-red/20 to-black px-4 md:px-6 py-4 relative">
             <button 
               onClick={() => setShowBanner(false)}
               className="absolute top-3 right-3 text-white/70 hover:text-white"
@@ -96,7 +129,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
               <p className="text-white/70 mt-1">
                 Aproveite seus 2 downloads diários. Quer acesso ilimitado a todos os templates?
               </p>
-              <div className="mt-3 flex space-x-3">
+              <div className="mt-3 flex flex-wrap gap-3">
                 <Button 
                   className="bg-flyerflix-red hover:bg-red-700"
                   onClick={handleUpgrade}
@@ -117,7 +150,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
         
         {/* Welcome message for first-time visitors */}
         {firstVisit && (
-          <div className="px-6 py-4 bg-white/5 border-b border-white/10">
+          <div className="px-4 md:px-6 py-4 bg-white/5 border-b border-white/10">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-xl font-bold">Bem-vindo à Flyerflix!</h2>
               <p className="text-white/70 mt-1">
@@ -128,7 +161,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
         )}
         
         {/* Main content */}
-        <main className="p-6">
+        <main className="p-4 md:p-6">
           {children}
         </main>
       </div>

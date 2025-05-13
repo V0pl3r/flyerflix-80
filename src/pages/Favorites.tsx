@@ -3,52 +3,49 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Heart } from 'lucide-react';
+import { Heart, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
 
-// Mock de favoritos para simular dados
-const mockFavorites = [
-  {
-    id: 1,
-    templateId: '201',
-    templateTitle: 'Festa Retrô',
-    imageUrl: 'https://source.unsplash.com/random/300x600?retro',
-    addedDate: '2025-05-11T09:30:00',
-    canvaUrl: 'https://canva.com/template/4',
-  },
-  {
-    id: 2,
-    templateId: '202',
-    templateTitle: 'Halloween Party',
-    imageUrl: 'https://source.unsplash.com/random/300x600?halloween',
-    addedDate: '2025-05-10T15:20:00',
-    canvaUrl: 'https://canva.com/template/5',
-  },
-  {
-    id: 3,
-    templateId: '203',
-    templateTitle: 'Festa Anos 80',
-    imageUrl: 'https://source.unsplash.com/random/300x600?80s',
-    addedDate: '2025-05-07T11:05:00',
-    canvaUrl: 'https://canva.com/template/6',
-  },
-];
+// Combine all template sources to find favorites
+const allTemplates = [...featuredTemplates, ...newTemplates, ...popularTemplates];
 
 const Favorites = () => {
-  const [favorites, setFavorites] = useState(mockFavorites);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [favorites, setFavorites] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   
   useEffect(() => {
-    // Verificar autenticação
+    // Check authentication
     const userData = localStorage.getItem('flyerflix-user');
     if (!userData) {
       navigate('/login');
       return;
     }
     
-    // Simulação de carregamento de dados
+    // Load favorites from localStorage
+    const storedFavorites = localStorage.getItem('flyerflix-favorites');
+    if (storedFavorites) {
+      const ids = JSON.parse(storedFavorites);
+      setFavoriteIds(ids);
+      
+      // Find the favorite templates from all templates
+      const favoriteTemplates = allTemplates.filter(template => 
+        ids.includes(template.id.toString())
+      ).map(template => ({
+        id: template.id,
+        templateId: template.id.toString(),
+        templateTitle: template.title,
+        imageUrl: template.imageUrl,
+        addedDate: new Date().toISOString(), // Mock date
+        canvaUrl: template.canvaUrl || 'https://canva.com/template/1',
+      }));
+      
+      setFavorites(favoriteTemplates);
+    }
+    
     setTimeout(() => {
       setIsLoading(false);
     }, 500);
@@ -61,10 +58,53 @@ const Favorites = () => {
       title: "Template aberto no Canva",
       description: "Uma nova aba foi aberta com seu template.",
     });
+    
+    // Add to history
+    const historyString = localStorage.getItem('flyerflix-history');
+    const history = historyString ? JSON.parse(historyString) : [];
+    
+    const template = favorites.find(fav => fav.canvaUrl === url);
+    if (template) {
+      const historyItem = {
+        id: Date.now().toString(),
+        type: 'download',
+        templateId: template.templateId,
+        templateTitle: template.templateTitle,
+        imageUrl: template.imageUrl,
+        date: new Date().toISOString(),
+        canvaUrl: template.canvaUrl
+      };
+      
+      localStorage.setItem('flyerflix-history', JSON.stringify([historyItem, ...history]));
+    }
   };
   
-  const handleRemoveFavorite = (id: number) => {
-    setFavorites(favorites.filter(favorite => favorite.id !== id));
+  const handleRemoveFavorite = (id: string | number) => {
+    const updatedFavoriteIds = favoriteIds.filter(favId => favId !== id.toString());
+    setFavoriteIds(updatedFavoriteIds);
+    localStorage.setItem('flyerflix-favorites', JSON.stringify(updatedFavoriteIds));
+    
+    const updatedFavorites = favorites.filter(favorite => favorite.id.toString() !== id.toString());
+    setFavorites(updatedFavorites);
+    
+    // Add to history
+    const historyString = localStorage.getItem('flyerflix-history');
+    const history = historyString ? JSON.parse(historyString) : [];
+    
+    const template = favorites.find(fav => fav.id.toString() === id.toString());
+    if (template) {
+      const historyItem = {
+        id: Date.now().toString(),
+        type: 'favorite',
+        templateId: template.templateId,
+        templateTitle: template.templateTitle,
+        imageUrl: template.imageUrl,
+        date: new Date().toISOString(),
+        canvaUrl: template.canvaUrl
+      };
+      
+      localStorage.setItem('flyerflix-history', JSON.stringify([historyItem, ...history]));
+    }
     
     toast({
       title: "Removido dos favoritos",

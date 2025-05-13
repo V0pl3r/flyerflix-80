@@ -7,50 +7,36 @@ import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-// Mock de downloads para simular dados
-const mockDownloads = [
-  {
-    id: 1,
-    templateId: '101',
-    templateTitle: 'Festa Neon Party',
-    imageUrl: 'https://source.unsplash.com/random/300x600?neon',
-    downloadDate: '2025-05-10T14:30:00',
-    canvaUrl: 'https://canva.com/template/1',
-  },
-  {
-    id: 2,
-    templateId: '102',
-    templateTitle: 'Aniversário Tropical',
-    imageUrl: 'https://source.unsplash.com/random/300x600?tropical',
-    downloadDate: '2025-05-08T10:15:00',
-    canvaUrl: 'https://canva.com/template/2',
-  },
-  {
-    id: 3,
-    templateId: '103',
-    templateTitle: 'Festival de Música',
-    imageUrl: 'https://source.unsplash.com/random/300x600?music',
-    downloadDate: '2025-05-05T16:45:00',
-    canvaUrl: 'https://canva.com/template/3',
-  },
-];
+type DownloadItem = {
+  id: string;
+  templateId: string;
+  templateTitle: string;
+  imageUrl: string;
+  downloadDate: string;
+  canvaUrl: string;
+};
 
 const Downloads = () => {
-  const [downloads, setDownloads] = useState(mockDownloads);
+  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   
   useEffect(() => {
-    // Verificar autenticação
+    // Check authentication
     const userData = localStorage.getItem('flyerflix-user');
     if (!userData) {
       navigate('/login');
       return;
     }
     
-    // Aqui carregaria os downloads do usuário de uma API real
-    // Mas por enquanto usamos os dados mock
+    // Load downloads from local storage
+    const storedDownloads = localStorage.getItem('flyerflix-downloads');
+    if (storedDownloads) {
+      setDownloads(JSON.parse(storedDownloads));
+    }
+    
+    // Simulate loading delay
     setTimeout(() => {
       setIsLoading(false);
     }, 500);
