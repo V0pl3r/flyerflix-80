@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
@@ -10,7 +9,7 @@ import { Download, Heart, ExternalLink } from 'lucide-react';
 const mockHistory = [
   {
     id: 1,
-    type: 'download',
+    type: 'download' as const,
     templateId: '101',
     templateTitle: 'Festa Neon Party',
     imageUrl: 'https://source.unsplash.com/random/300x600?neon',
@@ -19,7 +18,7 @@ const mockHistory = [
   },
   {
     id: 2,
-    type: 'favorite',
+    type: 'favorite' as const,
     templateId: '201',
     templateTitle: 'Festa Retrô',
     imageUrl: 'https://source.unsplash.com/random/300x600?retro',
@@ -28,7 +27,7 @@ const mockHistory = [
   },
   {
     id: 3,
-    type: 'view',
+    type: 'view' as const,
     templateId: '301',
     templateTitle: 'Casamento Elegante',
     imageUrl: 'https://source.unsplash.com/random/300x600?wedding',
@@ -37,7 +36,7 @@ const mockHistory = [
   },
   {
     id: 4,
-    type: 'download',
+    type: 'download' as const,
     templateId: '102',
     templateTitle: 'Aniversário Tropical',
     imageUrl: 'https://source.unsplash.com/random/300x600?tropical',
@@ -46,7 +45,7 @@ const mockHistory = [
   },
   {
     id: 5,
-    type: 'view',
+    type: 'view' as const,
     templateId: '302',
     templateTitle: 'Balada Techno',
     imageUrl: 'https://source.unsplash.com/random/300x600?techno',
