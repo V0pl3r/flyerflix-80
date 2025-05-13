@@ -7,7 +7,7 @@ import ComparisonSection from '../components/ComparisonSection';
 import PricingSection from '../components/PricingSection';
 import FaqSection from '../components/FaqSection';
 import Footer from '../components/Footer';
-import { featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
+import { newTemplates } from '../data/templates';
 
 const Index = () => {
   useEffect(() => {
@@ -22,10 +22,8 @@ const Index = () => {
       {/* Hero Section */}
       <Hero />
       
-      {/* Template Carousels */}
+      {/* Template Carousels - Only showing "Novidades da Semana" */}
       <TemplateCarousel title="Novidades da Semana" templates={newTemplates} />
-      <TemplateCarousel title="Mais Baixados" templates={popularTemplates} />
-      <TemplateCarousel title="Festas" templates={featuredTemplates} />
       
       {/* Comparison Section */}
       <ComparisonSection />

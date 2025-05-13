@@ -2,8 +2,24 @@
 import { Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 const PricingSection = () => {
+  const [loadingFree, setLoadingFree] = useState(false);
+  const [loadingUltimate, setLoadingUltimate] = useState(false);
+
+  const handleFreeClick = () => {
+    setLoadingFree(true);
+    // Reset loading after a short delay to simulate a loading state
+    setTimeout(() => setLoadingFree(false), 400);
+  };
+
+  const handleUltimateClick = () => {
+    setLoadingUltimate(true);
+    // Reset loading after a short delay to simulate a loading state
+    setTimeout(() => setLoadingUltimate(false), 400);
+  };
+
   const plans = [
     {
       id: 'free',
@@ -19,7 +35,8 @@ const PricingSection = () => {
         { text: 'Integração com Canva', included: false },
       ],
       buttonText: 'Começar agora',
-      buttonLink: '/register',
+      handleClick: handleFreeClick,
+      loading: loadingFree,
       featured: false
     },
     {
@@ -37,7 +54,8 @@ const PricingSection = () => {
         { text: 'Integração com Canva', included: true },
       ],
       buttonText: 'Assinar agora',
-      buttonLink: 'https://stripe.com/checkout/flyerflix-ultimate',
+      handleClick: handleUltimateClick,
+      loading: loadingUltimate,
       featured: true
     }
   ];
@@ -85,20 +103,14 @@ const PricingSection = () => {
                 ))}
               </ul>
               
-              <Button 
-                className={plan.featured ? "flyerflix-btn-primary w-full" : "flyerflix-btn-secondary w-full"}
-                asChild
-              >
-                {plan.id === 'free' ? (
-                  <Link to={plan.buttonLink}>
-                    {plan.buttonText}
-                  </Link>
-                ) : (
-                  <a href={plan.buttonLink} target="_blank" rel="noopener noreferrer">
-                    {plan.buttonText}
-                  </a>
-                )}
-              </Button>
+              <Link to="/register" onClick={plan.handleClick}>
+                <Button 
+                  className={`${plan.featured ? "flyerflix-btn-primary" : "flyerflix-btn-secondary"} w-full hover:scale-105 transition-all duration-300`}
+                  disabled={plan.loading}
+                >
+                  {plan.loading ? "Carregando..." : plan.buttonText}
+                </Button>
+              </Link>
             </div>
           ))}
         </div>
