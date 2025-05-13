@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
@@ -19,10 +18,11 @@ type HistoryItem = {
   canvaUrl: string;
 };
 
-const mockHistory = [
+// Updated mock history with string IDs instead of numbers
+const mockHistory: HistoryItem[] = [
   {
-    id: 1,
-    type: 'download' as const,
+    id: '1',
+    type: 'download',
     templateId: '101',
     templateTitle: 'Festa Neon Party',
     imageUrl: 'https://source.unsplash.com/random/300x600?neon',
@@ -30,8 +30,8 @@ const mockHistory = [
     canvaUrl: 'https://canva.com/template/1',
   },
   {
-    id: 2,
-    type: 'view' as const,
+    id: '2',
+    type: 'view',
     templateId: '102',
     templateTitle: 'Aniversário Tropical',
     imageUrl: 'https://source.unsplash.com/random/300x600?tropical',
@@ -39,8 +39,8 @@ const mockHistory = [
     canvaUrl: 'https://canva.com/template/2',
   },
   {
-    id: 3,
-    type: 'favorite' as const,
+    id: '3',
+    type: 'favorite',
     templateId: '103',
     templateTitle: 'Festival de Música',
     imageUrl: 'https://source.unsplash.com/random/300x600?music',
@@ -72,8 +72,8 @@ const History = () => {
       setFilteredHistory(JSON.parse(storedHistory));
     } else {
       // Use mock data if no history exists (for demo purposes)
-      setHistory(mockHistory as HistoryItem[]);
-      setFilteredHistory(mockHistory as HistoryItem[]);
+      setHistory(mockHistory);
+      setFilteredHistory(mockHistory);
     }
     
     setTimeout(() => {

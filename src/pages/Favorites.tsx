@@ -8,7 +8,10 @@ import { useToast } from '@/hooks/use-toast';
 import { featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
 
 // Combine all template sources to find favorites
-const allTemplates = [...featuredTemplates, ...newTemplates, ...popularTemplates];
+const allTemplates = [...featuredTemplates, ...newTemplates, ...popularTemplates].map(template => ({
+  ...template,
+  canvaUrl: template.canvaUrl || `https://canva.com/template/${template.id}`
+}));
 
 const Favorites = () => {
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
@@ -40,7 +43,7 @@ const Favorites = () => {
         templateTitle: template.title,
         imageUrl: template.imageUrl,
         addedDate: new Date().toISOString(), // Mock date
-        canvaUrl: template.canvaUrl || 'https://canva.com/template/1',
+        canvaUrl: template.canvaUrl,
       }));
       
       setFavorites(favoriteTemplates);
