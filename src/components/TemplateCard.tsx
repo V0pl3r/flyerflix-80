@@ -1,17 +1,20 @@
+
 import { Lock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Template } from '../data/templates';
+import { cn } from '@/lib/utils';
 
 interface TemplateCardProps {
   template: Template;
   onClick: () => void;
   isPremium?: boolean;
+  className?: string;
 }
 
-const TemplateCard = ({ template, onClick, isPremium = false }: TemplateCardProps) => {
+const TemplateCard = ({ template, onClick, isPremium = false, className }: TemplateCardProps) => {
   return (
     <div 
-      className="template-card group relative cursor-pointer transition-all duration-300"
+      className={cn("template-card group relative cursor-pointer transition-all duration-300", className)}
       onClick={onClick}
     >
       <img 
