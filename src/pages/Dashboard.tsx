@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
 import TemplateCard from '../components/TemplateCard';
+import TemplateCarousel from '../components/TemplateCarousel';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -198,90 +199,63 @@ const Dashboard = () => {
     setDownloadLimitReached(false);
   };
   
-  // Filter templates for free users
-  const filterTemplatesForPlan = (templates: Template[]) => {
-    if (user?.plan === 'ultimate') return templates;
-    
-    // Show premium templates but they will be locked
+  // Prepare templates with "New" badge
+  const prepareTemplatesWithNewBadge = (templates: Template[]) => {
+    // In a real app, we'd check the creation date against current date
+    // For this example, we're just marking random templates as "new"
     return templates.map(template => ({
       ...template,
-      isPremium: template.isPremium || Math.random() > 0.6 // Randomly make some templates premium
+      isNew: Math.random() > 0.7, // 30% chance of being marked as new
     }));
   };
+  
+  // Filter templates for free users
+  const filterTemplatesForPlan = (templates: Template[]) => {
+    if (user?.plan === 'ultimate') return prepareTemplatesWithNewBadge(templates);
+    
+    // Show premium templates but they will be locked
+    return prepareTemplatesWithNewBadge(templates.map(template => ({
+      ...template,
+      isPremium: template.isPremium || Math.random() > 0.6 // Randomly make some templates premium
+    })));
+  };
+
+  // Prepare templates for each category
+  const recommendedTemplates = filterTemplatesForPlan(featuredTemplates);
+  const weeklyNewTemplates = filterTemplatesForPlan(newTemplates);
+  const mostDownloadedTemplates = filterTemplatesForPlan(popularTemplates);
+  const exclusiveTemplates = user?.plan === 'ultimate' 
+    ? filterTemplatesForPlan(featuredTemplates.slice(5, 15).map(t => ({...t, isPremium: true})))
+    : [];
 
   return (
     <MemberLayout showWelcomeMessage={true}>
-      <div className="max-w-6xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto">
         {/* Personalized recommendations */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">
-            {user?.plan === 'ultimate' ? 'Recomendados para você' : 'Templates em destaque'}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filterTemplatesForPlan(featuredTemplates.slice(0, 5)).map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onClick={() => handleTemplateClick(template)}
-                isPremium={template.isPremium}
-                className="w-full"
-              />
-            ))}
-          </div>
-        </section>
+        <TemplateCarousel 
+          title={user?.plan === 'ultimate' ? 'Recomendado para você' : 'Templates em destaque'} 
+          templates={recommendedTemplates}
+        />
         
         {/* Recent uploads */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Novidades desta semana</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filterTemplatesForPlan(newTemplates.slice(0, 5)).map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onClick={() => handleTemplateClick(template)}
-                isPremium={template.isPremium}
-                className="w-full"
-              />
-            ))}
-          </div>
-        </section>
+        <TemplateCarousel 
+          title="Novidades da semana" 
+          templates={weeklyNewTemplates}
+        />
         
         {/* Popular templates */}
-        <section className="mb-12">
-          <h2 className="text-2xl font-bold mb-6">Mais baixados</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filterTemplatesForPlan(popularTemplates.slice(0, 5)).map((template) => (
-              <TemplateCard
-                key={template.id}
-                template={template}
-                onClick={() => handleTemplateClick(template)}
-                isPremium={template.isPremium}
-                className="w-full"
-              />
-            ))}
-          </div>
-        </section>
+        <TemplateCarousel 
+          title="Mais baixados" 
+          templates={mostDownloadedTemplates}
+        />
         
         {/* Ultimate plan exclusive section */}
         {user?.plan === 'ultimate' && (
-          <section className="mb-12">
-            <div className="flex items-center mb-6">
-              <h2 className="text-2xl font-bold">Conteúdo Exclusivo Ultimate</h2>
-              <Badge variant="default" className="bg-gradient-to-r from-amber-500 to-amber-400 text-black ml-3">
-                Premium
-              </Badge>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-              {featuredTemplates.slice(5, 10).map((template) => (
-                <TemplateCard
-                  key={template.id}
-                  template={{...template, isPremium: true}}
-                  onClick={() => handleTemplateClick({...template, isPremium: true})}
-                  className="w-full"
-                />
-              ))}
-            </div>
-          </section>
+          <TemplateCarousel 
+            title="Conteúdo Exclusivo Ultimate" 
+            templates={exclusiveTemplates}
+            isPremiumSection={true}
+          />
         )}
       </div>
       

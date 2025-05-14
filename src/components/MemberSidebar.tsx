@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { User, Home, Download, Heart, History, Settings, ChevronLeft, ChevronRight, Infinity, Menu } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import ProfileModal from './ProfileModal';
 
 type UserType = {
   name: string;
@@ -23,7 +23,7 @@ interface MemberSidebarProps {
 const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
-  const [isAvatarDialogOpen, setIsAvatarDialogOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
   
@@ -43,28 +43,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   };
   
   const handleAvatarClick = () => {
-    setIsAvatarDialogOpen(true);
-    
-    // Simple mock dialog to update avatar URL
-    const newAvatarUrl = prompt('Enter a new avatar URL:', user?.avatarUrl || '');
-    if (newAvatarUrl && user) {
-      handleAvatarChange(newAvatarUrl);
-    }
-  };
-
-  const handleAvatarChange = (url: string) => {
-    if (user) {
-      const updatedUser = { ...user, avatarUrl: url };
-      setUser(updatedUser);
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
-      
-      toast({
-        title: "Avatar atualizado",
-        description: "Sua foto de perfil foi alterada com sucesso.",
-      });
-      
-      setIsAvatarDialogOpen(false);
-    }
+    setIsProfileModalOpen(true);
   };
   
   if (!user) return null;
@@ -275,6 +254,12 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   if (!isMobileDrawer) {
     return (
       <>
+        {/* Profile Modal */}
+        <ProfileModal 
+          open={isProfileModalOpen} 
+          onOpenChange={setIsProfileModalOpen} 
+        />
+        
         {/* Mobile sidebar trigger - only visible on small screens */}
         <div className="md:hidden fixed top-4 left-4 z-40">
           <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
@@ -302,7 +287,15 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   }
   
   // For mobile drawer
-  return <SidebarContent />;
+  return (
+    <>
+      <ProfileModal 
+        open={isProfileModalOpen} 
+        onOpenChange={setIsProfileModalOpen} 
+      />
+      <SidebarContent />
+    </>
+  );
 };
 
 export default MemberSidebar;
