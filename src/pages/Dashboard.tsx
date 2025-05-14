@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
 import TemplateCard from '../components/TemplateCard';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Infinity, Heart, ExternalLink } from 'lucide-react';
 import { featuredTemplates, newTemplates, popularTemplates, Template } from '../data/templates';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type UserType = {
   name: string;
@@ -32,6 +34,8 @@ const Dashboard = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const userData = localStorage.getItem('flyerflix-user');
@@ -70,10 +74,16 @@ const Dashboard = () => {
       canvaUrl: template.canvaUrl || 'https://www.canva.com'
     };
     
-    setSelectedTemplate(templateWithExtras);
+    if (isMobile) {
+      // On mobile, navigate to template view page
+      navigate(`/template/${templateWithExtras.id}`);
+    } else {
+      // On desktop, show modal
+      setSelectedTemplate(templateWithExtras);
     
-    // Add to view history
-    addToHistory(templateWithExtras, 'view');
+      // Add to view history (only for desktop since mobile handles this separately)
+      addToHistory(templateWithExtras, 'view');
+    }
   };
   
   const addToHistory = (template: Template, actionType: 'download' | 'view' | 'favorite') => {
@@ -275,8 +285,8 @@ const Dashboard = () => {
         )}
       </div>
       
-      {/* Template details modal - make responsive */}
-      <Dialog open={!!selectedTemplate} onOpenChange={(open) => !open && setSelectedTemplate(null)}>
+      {/* Template details modal - only shown on desktop */}
+      <Dialog open={!!selectedTemplate && !isMobile} onOpenChange={(open) => !open && setSelectedTemplate(null)}>
         <DialogContent className="bg-[#1e1e1e] border-white/10 text-white w-full sm:max-w-md md:max-w-2xl">
           {selectedTemplate && (
             <>

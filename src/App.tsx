@@ -16,6 +16,7 @@ import Favorites from "./pages/Favorites";
 import History from "./pages/History";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TemplateView from "./pages/TemplateView";
 
 // Admin imports
 import AdminLayout from "./pages/admin/AdminLayout";
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/template/:id" element={<TemplateView />} />
           <Route path="/perfil" element={<Profile />} />
           <Route path="/meus-downloads" element={<Downloads />} />
           <Route path="/favoritos" element={<Favorites />} />
