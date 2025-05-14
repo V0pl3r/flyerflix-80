@@ -42,12 +42,12 @@ const TemplateCarousel = ({ title, templates }: TemplateCarouselProps) => {
   };
 
   return (
-    <section className="py-10">
+    <section className="py-10 w-full overflow-x-hidden">
       <div className="flyerflix-container">
         <h2 className="text-2xl font-bold mb-6">{title}</h2>
       </div>
       
-      <div className="carousel-container relative group">
+      <div className="carousel-container relative group w-full overflow-visible">
         {/* Left Arrow */}
         {showLeftArrow && (
           <button 
@@ -61,7 +61,7 @@ const TemplateCarousel = ({ title, templates }: TemplateCarouselProps) => {
         {/* Templates Container */}
         <div 
           ref={carouselRef}
-          className="flex px-4 md:px-8 lg:px-12 xl:px-16 space-x-4 overflow-x-auto scrollbar-none pb-6"
+          className="flex px-4 md:px-8 lg:px-12 xl:px-16 space-x-4 overflow-x-auto scrollbar-none pb-6 max-w-full"
           onScroll={checkArrows}
         >
           {templates.map((template) => (

@@ -41,7 +41,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-flyerflix-black text-white">
+    <div className="min-h-screen bg-flyerflix-black text-white w-full overflow-x-hidden">
       {/* Navbar */}
       <Navbar />
       
@@ -49,7 +49,9 @@ const Index = () => {
       <Hero />
       
       {/* Template Carousels - Only showing "Novidades da Semana" */}
-      <TemplateCarousel title="Novidades da Semana" templates={newTemplates} />
+      <div className="w-full">
+        <TemplateCarousel title="Novidades da Semana" templates={newTemplates} />
+      </div>
       
       {/* Comparison Section */}
       <ComparisonSection />
