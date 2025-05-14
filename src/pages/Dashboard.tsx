@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import MemberLayout from '../components/MemberLayout';
 import TemplateCard from '../components/TemplateCard';
@@ -278,7 +277,7 @@ const Dashboard = () => {
       
       {/* Template details modal - make responsive */}
       <Dialog open={!!selectedTemplate} onOpenChange={(open) => !open && setSelectedTemplate(null)}>
-        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-[90vw] sm:max-w-md md:max-w-2xl mx-4">
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white w-full sm:max-w-md md:max-w-2xl">
           {selectedTemplate && (
             <>
               <DialogHeader>
@@ -364,7 +363,7 @@ const Dashboard = () => {
       
       {/* Download limit reached dialog - make responsive */}
       <Dialog open={downloadLimitReached} onOpenChange={setDownloadLimitReached}>
-        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-[90vw] sm:max-w-md md:max-w-lg mx-4">
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white w-full sm:max-w-md md:max-w-lg">
           <DialogHeader>
             <DialogTitle className="text-xl text-flyerflix-red font-bold">⚠️ Limite diário atingido!</DialogTitle>
             <DialogDescription className="text-white/90 text-base mt-2">
