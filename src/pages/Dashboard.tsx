@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import MemberLayout from '../components/MemberLayout';
 import TemplateCard from '../components/TemplateCard';
@@ -201,19 +202,20 @@ const Dashboard = () => {
 
   return (
     <MemberLayout showWelcomeMessage={true}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Personalized recommendations */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold mb-6">
             {user?.plan === 'ultimate' ? 'Recomendados para você' : 'Templates em destaque'}
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filterTemplatesForPlan(featuredTemplates.slice(0, 5)).map((template) => (
               <TemplateCard
                 key={template.id}
                 template={template}
                 onClick={() => handleTemplateClick(template)}
                 isPremium={template.isPremium}
+                className="w-full"
               />
             ))}
           </div>
@@ -222,13 +224,14 @@ const Dashboard = () => {
         {/* Recent uploads */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Novidades desta semana</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filterTemplatesForPlan(newTemplates.slice(0, 5)).map((template) => (
               <TemplateCard
                 key={template.id}
                 template={template}
                 onClick={() => handleTemplateClick(template)}
                 isPremium={template.isPremium}
+                className="w-full"
               />
             ))}
           </div>
@@ -237,13 +240,14 @@ const Dashboard = () => {
         {/* Popular templates */}
         <section className="mb-12">
           <h2 className="text-2xl font-bold mb-6">Mais baixados</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filterTemplatesForPlan(popularTemplates.slice(0, 5)).map((template) => (
               <TemplateCard
                 key={template.id}
                 template={template}
                 onClick={() => handleTemplateClick(template)}
                 isPremium={template.isPremium}
+                className="w-full"
               />
             ))}
           </div>
@@ -258,12 +262,13 @@ const Dashboard = () => {
                 Premium
               </Badge>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {featuredTemplates.slice(5, 10).map((template) => (
                 <TemplateCard
                   key={template.id}
                   template={{...template, isPremium: true}}
                   onClick={() => handleTemplateClick({...template, isPremium: true})}
+                  className="w-full"
                 />
               ))}
             </div>
@@ -271,9 +276,9 @@ const Dashboard = () => {
         )}
       </div>
       
-      {/* Template details modal */}
+      {/* Template details modal - make responsive */}
       <Dialog open={!!selectedTemplate} onOpenChange={(open) => !open && setSelectedTemplate(null)}>
-        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-md md:max-w-2xl">
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-[90vw] sm:max-w-md md:max-w-2xl mx-4">
           {selectedTemplate && (
             <>
               <DialogHeader>
@@ -343,7 +348,7 @@ const Dashboard = () => {
                     </Button>
                     
                     <Button 
-                      className="bg-flyerflix-red hover:bg-red-700 w-full"
+                      className="bg-flyerflix-red hover:bg-red-700 w-full min-h-[44px]"
                       onClick={handleDownload}
                     >
                       <ExternalLink size={16} className="mr-2" />
@@ -357,9 +362,9 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Download limit reached dialog */}
+      {/* Download limit reached dialog - make responsive */}
       <Dialog open={downloadLimitReached} onOpenChange={setDownloadLimitReached}>
-        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white">
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white max-w-[90vw] sm:max-w-md md:max-w-lg mx-4">
           <DialogHeader>
             <DialogTitle className="text-xl text-flyerflix-red font-bold">⚠️ Limite diário atingido!</DialogTitle>
             <DialogDescription className="text-white/90 text-base mt-2">
@@ -376,9 +381,9 @@ const Dashboard = () => {
             </p>
           </div>
           
-          <DialogFooter className="flex flex-col space-y-3 sm:space-y-0">
+          <DialogFooter className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:justify-end">
             <Button 
-              className="bg-flyerflix-red hover:bg-red-700 text-base py-6 font-medium w-full sm:w-auto"
+              className="bg-flyerflix-red hover:bg-red-700 text-base py-6 font-medium w-full sm:w-auto min-h-[44px]"
               onClick={handleUpgrade}
             >
               🔓 Atualizar para Ultimate
@@ -386,7 +391,7 @@ const Dashboard = () => {
             <Button 
               variant="outline" 
               onClick={() => setDownloadLimitReached(false)} 
-              className="text-white border-white/20 hover:bg-white/10 w-full sm:w-auto"
+              className="text-white border-white/20 hover:bg-white/10 w-full sm:w-auto min-h-[44px]"
             >
               Voltar mais tarde
             </Button>

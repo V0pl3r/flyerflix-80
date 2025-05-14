@@ -17,8 +17,7 @@ const Register = () => {
     planChoice: 'free',
   });
   
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -103,7 +102,7 @@ const Register = () => {
               name="name"
               type="text"
               placeholder="Seu nome"
-              className="bg-[#333] border-[#444] text-white"
+              className="bg-[#333] border-[#444] text-white min-h-[44px]"
               value={formData.name}
               onChange={handleChange}
               required
@@ -119,14 +118,14 @@ const Register = () => {
               name="email"
               type="email"
               placeholder="seu@email.com"
-              className="bg-[#333] border-[#444] text-white"
+              className="bg-[#333] border-[#444] text-white min-h-[44px]"
               value={formData.email}
               onChange={handleChange}
               required
             />
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-white/70 mb-1">
                 Senha
@@ -135,22 +134,14 @@ const Register = () => {
                 <Input
                   id="password"
                   name="password"
-                  type={showPassword ? "text" : "password"}
+                  type={showPasswords ? "text" : "password"}
                   placeholder="••••••••"
-                  className="bg-[#333] border-[#444] text-white pr-10"
+                  className="bg-[#333] border-[#444] text-white pr-10 min-h-[44px]"
                   value={formData.password}
                   onChange={handleChange}
                   required
                   minLength={6}
                 />
-                <button 
-                  type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
             </div>
             
@@ -162,24 +153,26 @@ const Register = () => {
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
+                  type={showPasswords ? "text" : "password"}
                   placeholder="••••••••"
-                  className="bg-[#333] border-[#444] text-white pr-10"
+                  className="bg-[#333] border-[#444] text-white pr-10 min-h-[44px]"
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
                   minLength={6}
                 />
-                <button 
-                  type="button"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  aria-label={showConfirmPassword ? "Esconder senha" : "Mostrar senha"}
-                >
-                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
               </div>
             </div>
+            
+            {/* Single eye icon for both password fields */}
+            <button 
+              type="button"
+              className="absolute right-3 top-8 transform text-white/70 hover:text-white md:right-[calc(50%+10px)]"
+              onClick={() => setShowPasswords(!showPasswords)}
+              aria-label={showPasswords ? "Esconder senhas" : "Mostrar senhas"}
+            >
+              {showPasswords ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
           
           <div className="space-y-3 pt-2">
@@ -229,7 +222,7 @@ const Register = () => {
           
           <Button 
             type="submit" 
-            className="w-full bg-flyerflix-red hover:bg-red-700 mt-6"
+            className="w-full bg-flyerflix-red hover:bg-red-700 mt-6 min-h-[44px]"
             disabled={isLoading}
           >
             {isLoading ? 'Criando conta...' : 'Criar conta'}
