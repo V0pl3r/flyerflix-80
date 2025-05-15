@@ -5,6 +5,7 @@ import { isSlowConnection } from './lib/utils'
 import './index.css'
 import { initSecurity } from './utils/securityUtils'
 import { Skeleton } from '@/components/ui/skeleton'
+import AppDefault from './App'
 
 // Initialize security measures
 initSecurity();
@@ -12,7 +13,7 @@ initSecurity();
 // Optimize loading for slow connections
 const App = isSlowConnection() 
   ? lazy(() => import('./App.tsx'))
-  : require('./App.tsx').default;
+  : AppDefault;
 
 // Loader component
 const AppLoader = () => (
