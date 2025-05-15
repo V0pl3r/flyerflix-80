@@ -3,11 +3,23 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
 import TemplateCategories from '../components/TemplateCategories';
+import TemplateFilters, { EventType } from '../components/TemplateFilters';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Infinity, Heart, ExternalLink } from 'lucide-react';
-import { featuredTemplates, newTemplates, popularTemplates, Template } from '../data/templates';
+import { 
+  featuredTemplates, 
+  newTemplates, 
+  popularTemplates, 
+  Template, 
+  weeklyPopularTemplates,
+  usedByCreatorsTemplates,
+  pagodeTemplates,
+  sertanejoTemplates,
+  funkTemplates,
+  birthdayTemplates
+} from '../data/templates';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 type UserType = {
@@ -28,11 +40,16 @@ type DownloadHistoryItem = {
 };
 
 const Dashboard = () => {
+  // User and session state
   const [user, setUser] = useState<UserType | null>(null);
   const [downloadLimitReached, setDownloadLimitReached] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
+  
+  // UI filters and state
+  const [selectedEventType, setSelectedEventType] = useState<EventType>('all');
+  
   const { toast } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -196,6 +213,10 @@ const Dashboard = () => {
     });
     setDownloadLimitReached(false);
   };
+
+  const handleFilterChange = (filters: { eventType: EventType }) => {
+    setSelectedEventType(filters.eventType);
+  };
   
   // Filter templates for free users
   const filterTemplatesForPlan = (templates: Template[]) => {
@@ -215,20 +236,39 @@ const Dashboard = () => {
   const exclusiveTemplates = user?.plan === 'ultimate' 
     ? filterTemplatesForPlan(featuredTemplates.slice(5, 15).map(t => ({...t, isPremium: true})))
     : [];
+  const filteredWeeklyPopularTemplates = filterTemplatesForPlan(weeklyPopularTemplates);
+  const filteredUsedByCreatorsTemplates = filterTemplatesForPlan(usedByCreatorsTemplates);
+  const filteredPagodeTemplates = filterTemplatesForPlan(pagodeTemplates);
+  const filteredSertanejoTemplates = filterTemplatesForPlan(sertanejoTemplates);
+  const filteredFunkTemplates = filterTemplatesForPlan(funkTemplates);
+  const filteredBirthdayTemplates = filterTemplatesForPlan(birthdayTemplates);
 
   return (
     <MemberLayout showWelcomeMessage={true}>
       <div className="max-w-6xl mx-auto">
+        {/* Event type filter */}
+        <TemplateFilters 
+          onFilterChange={handleFilterChange}
+          selectedEventType={selectedEventType}
+        />
+        
         {/* Template categories section */}
         <TemplateCategories
           recommendedTemplates={recommendedTemplates}
           newTemplates={weeklyNewTemplates}
           popularTemplates={mostDownloadedTemplates}
           exclusiveTemplates={exclusiveTemplates}
+          weeklyPopularTemplates={filteredWeeklyPopularTemplates}
+          usedByCreatorsTemplates={filteredUsedByCreatorsTemplates}
+          pagodeTemplates={filteredPagodeTemplates}
+          sertanejoTemplates={filteredSertanejoTemplates}
+          funkTemplates={filteredFunkTemplates}
+          birthdayTemplates={filteredBirthdayTemplates}
           userPlan={user?.plan as 'free' | 'ultimate'}
           onTemplateClick={handleTemplateClick}
           onToggleFavorite={handleToggleFavorite}
           favoritesIds={favorites}
+          selectedEventType={selectedEventType}
         />
       </div>
       

@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from 'react';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Star, Users } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import TemplateCard from './TemplateCard';
 import { Template } from '../data/templates';
@@ -14,6 +14,9 @@ interface TemplateCarouselProps {
   favoritesIds?: string[];
   showFavoriteButtons?: boolean;
   isLoading?: boolean;
+  isWeeklyPopular?: boolean;
+  isCreatorUsed?: boolean;
+  isRecommended?: boolean;
 }
 
 const TemplateCarousel = ({ 
@@ -24,7 +27,10 @@ const TemplateCarousel = ({
   onToggleFavorite,
   favoritesIds = [],
   showFavoriteButtons = false,
-  isLoading = false
+  isLoading = false,
+  isWeeklyPopular = false,
+  isCreatorUsed = false,
+  isRecommended = false
 }: TemplateCarouselProps) => {
   const carouselRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
@@ -85,6 +91,10 @@ const TemplateCarousel = ({
     }
   };
 
+  if (templates.length === 0 && !isLoading) {
+    return null;
+  }
+
   return (
     <section className="py-6 w-full">
       <div className="px-4 md:px-8 lg:px-12 xl:px-16">
@@ -93,6 +103,16 @@ const TemplateCarousel = ({
           {isPremiumSection && (
             <span className="bg-gradient-to-r from-amber-500 to-amber-400 text-black text-xs font-medium ml-3 px-2.5 py-0.5 rounded">
               Premium
+            </span>
+          )}
+          {isWeeklyPopular && (
+            <span className="bg-flyerflix-red text-white text-xs font-medium ml-3 px-2.5 py-0.5 rounded flex items-center">
+              <Star size={12} className="mr-1" /> Populares da semana
+            </span>
+          )}
+          {isRecommended && (
+            <span className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-medium ml-3 px-2.5 py-0.5 rounded">
+              Recomendados para você
             </span>
           )}
         </div>
@@ -148,6 +168,16 @@ const TemplateCarousel = ({
                     <span className="bg-flyerflix-red text-white text-xs font-medium px-2 py-0.5 rounded shadow-lg">
                       Novo
                     </span>
+                  </div>
+                )}
+
+                {/* Used by creators badge */}
+                {isCreatorUsed && template.usageCount && (
+                  <div className="absolute bottom-2 left-2 right-2 z-10">
+                    <div className="bg-black/60 backdrop-blur-sm text-white text-xs rounded px-2 py-1 flex items-center">
+                      <Users size={12} className="mr-1" />
+                      <span>{template.usageCount}+ criadores</span>
+                    </div>
                   </div>
                 )}
               </div>
