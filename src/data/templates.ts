@@ -1,4 +1,3 @@
-
 export type Template = {
   id: string;
   title: string;
@@ -7,6 +6,7 @@ export type Template = {
   canvaUrl?: string;
   isPremium?: boolean;
   downloads?: number;
+  isNew?: boolean;
 };
 
 export const featuredTemplates: Template[] = [
@@ -65,19 +65,22 @@ export const newTemplates: Template[] = [
     id: "9",
     title: "Spring Fashion Show",
     imageUrl: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=400&h=700",
-    category: "Moda"
+    category: "Moda",
+    isNew: true
   },
   {
     id: "10",
     title: "Tech Conference",
     imageUrl: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&q=80&w=400&h=700",
-    category: "Tecnologia"
+    category: "Tecnologia",
+    isNew: true
   },
   {
     id: "11",
     title: "New Year Party",
     imageUrl: "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?auto=format&fit=crop&q=80&w=400&h=700",
-    category: "Festa"
+    category: "Festa",
+    isNew: true
   },
   {
     id: "12",
