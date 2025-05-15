@@ -1,8 +1,9 @@
 
-import { Lock, Heart, ExternalLink } from 'lucide-react';
+import { Lock, Heart, ExternalLink, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Template } from '../data/templates';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 interface TemplateCardProps {
   template: Template;
@@ -12,6 +13,7 @@ interface TemplateCardProps {
   className?: string;
   onToggleFavorite?: () => void;
   showFavoriteButton?: boolean;
+  onPreview?: () => void;
 }
 
 const TemplateCard = ({ 
@@ -21,7 +23,8 @@ const TemplateCard = ({
   isFavorite = false,
   className,
   onToggleFavorite,
-  showFavoriteButton = false
+  showFavoriteButton = false,
+  onPreview
 }: TemplateCardProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const isDesktop = window.innerWidth >= 1024; // Simple check for desktop
@@ -29,6 +32,11 @@ const TemplateCard = ({
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onToggleFavorite?.();
+  };
+
+  const handlePreviewClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPreview?.();
   };
 
   return (
@@ -48,12 +56,32 @@ const TemplateCard = ({
           className="w-full h-full object-cover"
           loading="lazy"
         />
+        
+        {/* Watermark overlay - only shown in preview */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <p className="text-white font-bold text-2xl opacity-20 rotate-[-30deg]">
+            FLYERFLIX
+          </p>
+        </div>
       </div>
       
       {/* Default info overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3 rounded-lg">
         <p className="text-white font-medium text-sm line-clamp-2">{template.title}</p>
         <p className="text-white/70 text-xs mt-1">Clique para visualizar</p>
+      </div>
+      
+      {/* Quick action buttons */}
+      <div className="absolute bottom-2 right-2 z-20 flex gap-1">
+        {onPreview && (
+          <button
+            className="p-1.5 rounded-full bg-black/50 hover:bg-flyerflix-red/80 transition-colors"
+            onClick={handlePreviewClick}
+            aria-label="Visualizar"
+          >
+            <Eye className="h-4 w-4 text-white" />
+          </button>
+        )}
       </div>
       
       {/* Hover preview for desktop */}
@@ -64,12 +92,24 @@ const TemplateCard = ({
             <p className="text-white/60 text-xs mt-1">{template.eventType || 'Evento geral'}</p>
           </div>
           
-          <button 
-            className="mt-2 bg-flyerflix-red text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
-          >
-            <ExternalLink size={12} className="mr-1" />
-            Visualizar
-          </button>
+          <div className="flex flex-col gap-2">
+            {onPreview && (
+              <Button 
+                variant="outline"
+                className="mt-2 bg-white/10 text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                onClick={handlePreviewClick}
+              >
+                <Eye size={12} className="mr-1" />
+                Pré-visualizar
+              </Button>
+            )}
+            <button 
+              className="mt-2 bg-flyerflix-red text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+            >
+              <ExternalLink size={12} className="mr-1" />
+              Visualizar completo
+            </button>
+          </div>
         </div>
       )}
       
@@ -92,8 +132,6 @@ const TemplateCard = ({
           />
         </button>
       )}
-
-      {/* New badge handled by parent component */}
     </div>
   );
 };

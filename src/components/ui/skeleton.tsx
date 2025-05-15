@@ -34,4 +34,40 @@ function AvatarSkeleton({ size = "12" }: { size?: string }) {
   return <Skeleton className={`h-${size} w-${size} rounded-full`} />;
 }
 
-export { Skeleton, TemplateCardSkeleton, TextSkeleton, AvatarSkeleton }
+function CardSkeleton() {
+  return (
+    <div className="rounded-lg overflow-hidden">
+      <Skeleton className="w-full h-48" />
+      <div className="p-4 space-y-3">
+        <Skeleton className="h-6 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-2/3" />
+        <div className="pt-2 flex gap-2">
+          <Skeleton className="h-8 w-24 rounded-md" />
+          <Skeleton className="h-8 w-24 rounded-md" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Loading indicator with fade-in
+function FadeInSkeleton({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
+  return (
+    <div 
+      className="animate-fade-in" 
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export { 
+  Skeleton, 
+  TemplateCardSkeleton, 
+  TextSkeleton, 
+  AvatarSkeleton, 
+  CardSkeleton,
+  FadeInSkeleton
+}

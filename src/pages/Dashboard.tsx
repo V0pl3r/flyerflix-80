@@ -10,6 +10,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Lock, Infinity, Heart, ExternalLink, Check } from 'lucide-react';
 import FeaturedTemplate from '@/components/FeaturedTemplate';
 import YouMayAlsoLike from '@/components/YouMayAlsoLike';
+import WelcomeModal from '@/components/WelcomeModal';
+import OnboardingGuide from '@/components/OnboardingGuide';
 import { 
   featuredTemplates, 
   newTemplates, 
@@ -24,6 +26,7 @@ import {
   getRecommendedTemplates
 } from '../data/templates';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 // User and history types
 type UserType = {
@@ -52,9 +55,12 @@ const Dashboard = () => {
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
   const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
   const [featuredTemplate, setFeaturedTemplate] = useState<Template | null>(null);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [previewedTemplate, setPreviewedTemplate] = useState<Template | null>(null);
   
   // UI filters and state
   const [selectedEventType, setSelectedEventType] = useState<EventType>('all');
+  const [isLoading, setIsLoading] = useState(true);
   
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -80,6 +86,13 @@ const Dashboard = () => {
 
     // Set featured template (could come from an API in a real app)
     setFeaturedTemplate(featuredTemplates[0]);
+    
+    // Simulate loading state for smooth transitions
+    const loadingTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 800);
+    
+    return () => clearTimeout(loadingTimer);
   }, []);
   
   const handleTemplateClick = (template: Template) => {
@@ -110,6 +123,12 @@ const Dashboard = () => {
       // Add to view history (only for desktop since mobile handles this separately)
       addToHistory(templateWithExtras, 'view');
     }
+  };
+  
+  const handlePreviewTemplate = (template: Template) => {
+    // Quick preview mode
+    setPreviewedTemplate(template);
+    setIsPreviewMode(true);
   };
   
   const addToHistory = (template: Template, actionType: 'download' | 'view' | 'favorite') => {
@@ -253,6 +272,12 @@ const Dashboard = () => {
 
   const handleFilterChange = (filters: { eventType: EventType }) => {
     setSelectedEventType(filters.eventType);
+    setIsLoading(true);
+    
+    // Simulate loading delay for smooth transitions
+    setTimeout(() => {
+      setIsLoading(false);
+    }, 600);
   };
   
   // Filter templates for free users
@@ -296,6 +321,12 @@ const Dashboard = () => {
 
   return (
     <MemberLayout showWelcomeMessage={true}>
+      {/* Welcome modal for first-time users */}
+      <WelcomeModal userName={user?.name?.split(' ')[0]} />
+      
+      {/* Onboarding guide for new users */}
+      <OnboardingGuide />
+      
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Event type filter */}
         <TemplateFilters 
@@ -337,11 +368,81 @@ const Dashboard = () => {
           userPlan={user?.plan as 'free' | 'ultimate'}
           onTemplateClick={handleTemplateClick}
           onToggleFavorite={handleToggleFavorite}
+          onPreviewTemplate={handlePreviewTemplate}
           favoritesIds={favorites}
           selectedEventType={selectedEventType}
           personalizedRecommendations={personalizedRecommendations}
+          isLoading={isLoading}
         />
       </div>
+      
+      {/* Quick template preview modal */}
+      <Dialog 
+        open={isPreviewMode} 
+        onOpenChange={(open) => !open && setIsPreviewMode(false)}
+      >
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white w-full sm:max-w-md">
+          {previewedTemplate && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-lg">{previewedTemplate.title}</DialogTitle>
+                <DialogDescription className="text-white/70 text-xs">
+                  Pré-visualização rápida
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="py-4">
+                <div className="relative rounded-md overflow-hidden">
+                  <AspectRatio ratio={9/16}>
+                    <img 
+                      src={previewedTemplate.imageUrl} 
+                      alt={previewedTemplate.title}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Watermark overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <p className="text-white font-bold text-4xl opacity-20 rotate-[-30deg]">
+                        FLYERFLIX
+                      </p>
+                    </div>
+                  </AspectRatio>
+                </div>
+                
+                <div className="flex justify-between items-center mt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={`border-white/20 hover:bg-white/10 ${
+                      isTemplateFavorite(previewedTemplate.id) 
+                        ? 'text-flyerflix-red' 
+                        : 'text-white'
+                    }`}
+                    onClick={() => handleToggleFavorite(previewedTemplate)}
+                  >
+                    <Heart
+                      size={16} 
+                      className={`mr-2 ${isTemplateFavorite(previewedTemplate.id) ? 'fill-flyerflix-red' : ''}`} 
+                    />
+                    {isTemplateFavorite(previewedTemplate.id) ? 'Remover' : 'Favoritar'}
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => {
+                      setIsPreviewMode(false);
+                      handleTemplateClick(previewedTemplate);
+                    }}
+                    className="bg-flyerflix-red hover:bg-red-700"
+                    size="sm"
+                  >
+                    Ver detalhes completos
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
       
       {/* Template details modal - only shown on desktop */}
       <Dialog open={!!selectedTemplate && !isMobile} onOpenChange={(open) => !open && setSelectedTemplate(null)}>
@@ -363,6 +464,13 @@ const Dashboard = () => {
                       alt={selectedTemplate.title}
                       className="absolute inset-0 w-full h-full object-cover"
                     />
+                    
+                    {/* Watermark overlay */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <p className="text-white font-bold text-4xl opacity-20 rotate-[-30deg]">
+                        FLYERFLIX
+                      </p>
+                    </div>
                   </div>
                 </div>
                 
