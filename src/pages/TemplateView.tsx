@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Heart, ExternalLink } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Heart, ExternalLink, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Template, featuredTemplates, newTemplates, popularTemplates } from '../data/templates';
@@ -15,7 +15,10 @@ const TemplateView = () => {
   const { id } = useParams<TemplateViewParams>();
   const [template, setTemplate] = useState<Template | null>(null);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [showSuccessFeedback, setShowSuccessFeedback] = useState(false);
+  const [similarTemplates, setSimilarTemplates] = useState<Template[]>([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Fetch template data based on ID
   useEffect(() => {
@@ -29,6 +32,12 @@ const TemplateView = () => {
     
     if (foundTemplate) {
       setTemplate(foundTemplate);
+      
+      // Find similar templates (same category)
+      const similar = allTemplates
+        .filter(t => t.category === foundTemplate.category && t.id !== id)
+        .slice(0, 4);
+      setSimilarTemplates(similar);
       
       // Check if this template is in favorites
       const storedFavorites = localStorage.getItem('flyerflix-favorites');
@@ -125,7 +134,8 @@ const TemplateView = () => {
       templateTitle: template.title,
       imageUrl: template.imageUrl,
       downloadDate: new Date().toISOString(),
-      canvaUrl: template.canvaUrl || 'https://www.canva.com'
+      canvaUrl: template.canvaUrl || 'https://www.canva.com',
+      category: template.category
     };
     
     const updatedDownloads = [newDownload, ...downloads];
@@ -148,15 +158,25 @@ const TemplateView = () => {
     const updatedHistory = [historyItem, ...history];
     localStorage.setItem('flyerflix-history', JSON.stringify(updatedHistory.slice(0, 100)));
     
-    // Open Canva URL
-    if (template.canvaUrl) {
-      window.open(template.canvaUrl, '_blank');
-    }
+    // Show success feedback
+    setShowSuccessFeedback(true);
+    setTimeout(() => {
+      setShowSuccessFeedback(false);
+      
+      // Open Canva URL
+      if (template.canvaUrl) {
+        window.open(template.canvaUrl, '_blank');
+      }
+    }, 1500);
     
     toast({
       title: "Download iniciado!",
       description: `${template.title} está sendo baixado.`,
     });
+  };
+  
+  const navigateToSimilar = (template: Template) => {
+    navigate(`/template/${template.id}`);
   };
   
   if (!template) {
@@ -182,24 +202,66 @@ const TemplateView = () => {
       
       {/* Template Image */}
       <div className="container px-4 pt-6">
-        <AspectRatio ratio={9/16} className="bg-black/30 rounded-lg overflow-hidden mb-6">
+        <AspectRatio ratio={9/16} className="bg-black/30 rounded-lg overflow-hidden mb-6 relative">
           <img 
             src={template.imageUrl} 
             alt={template.title}
             className="w-full h-full object-cover"
           />
+          
+          {/* Watermark overlay */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-white opacity-30 text-5xl font-bold rotate-[-30deg]">
+              FLYERFLIX
+            </span>
+          </div>
         </AspectRatio>
         
         {/* Template Info */}
         <div className="mb-24">
           <p className="text-white/70 mb-4">
-            Este template é perfeito para criar flyers atrativos e profissionais para o seu evento.
+            {template.description || 'Este template é perfeito para criar flyers atrativos e profissionais para o seu evento.'}
           </p>
           
           <div className="flex items-center text-sm text-white/60 mb-4">
             <span className="mr-4">Categoria: {template.category || 'Geral'}</span>
             <span>{template.downloads || 0} downloads</span>
           </div>
+          
+          {/* Similar Templates */}
+          {similarTemplates.length > 0 && (
+            <div className="mt-8">
+              <h3 className="text-xl font-bold mb-4">Templates similares</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {similarTemplates.map((similarTemplate) => (
+                  <div 
+                    key={similarTemplate.id} 
+                    className="cursor-pointer"
+                    onClick={() => navigateToSimilar(similarTemplate)}
+                  >
+                    <div className="relative rounded-md overflow-hidden aspect-[9/16]">
+                      <img 
+                        src={similarTemplate.imageUrl} 
+                        alt={similarTemplate.title}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* Watermark overlay */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span className="text-white opacity-20 text-sm font-bold rotate-[-30deg]">
+                          FLYERFLIX
+                        </span>
+                      </div>
+                      
+                      <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-sm font-medium">Ver template</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -218,13 +280,23 @@ const TemplateView = () => {
             {isFavorite ? 'Remover' : 'Favoritar'}
           </Button>
           
-          <Button 
-            className="bg-flyerflix-red hover:bg-red-700"
-            onClick={handleDownload}
-          >
-            <ExternalLink size={16} className="mr-2" />
-            Editar no Canva
-          </Button>
+          {showSuccessFeedback ? (
+            <Button 
+              className="bg-green-600 hover:bg-green-700 flex items-center justify-center"
+              disabled
+            >
+              <Check size={16} className="mr-2" />
+              Baixado com sucesso!
+            </Button>
+          ) : (
+            <Button 
+              className="bg-flyerflix-red hover:bg-red-700"
+              onClick={handleDownload}
+            >
+              <ExternalLink size={16} className="mr-2" />
+              Editar no Canva
+            </Button>
+          )}
         </div>
       </div>
     </div>
