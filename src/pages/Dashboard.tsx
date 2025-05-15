@@ -1,11 +1,10 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
-import TemplateCard from '../components/TemplateCard';
-import TemplateCarousel from '../components/TemplateCarousel';
+import TemplateCategories from '../components/TemplateCategories';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Lock, Infinity, Heart, ExternalLink } from 'lucide-react';
 import { featuredTemplates, newTemplates, popularTemplates, Template } from '../data/templates';
@@ -171,17 +170,16 @@ const Dashboard = () => {
         title: "Removido dos favoritos",
         description: `${template.title} foi removido dos seus favoritos.`,
       });
-      // Add to history
-      addToHistory(template, 'favorite');
     } else {
       updatedFavorites = [...favorites, template.id];
       toast({
         title: "Adicionado aos favoritos",
         description: `${template.title} foi adicionado aos seus favoritos.`,
       });
-      // Add to history
-      addToHistory(template, 'favorite');
     }
+    
+    // Add to history
+    addToHistory(template, 'favorite');
     
     setFavorites(updatedFavorites);
     localStorage.setItem('flyerflix-favorites', JSON.stringify(updatedFavorites));
@@ -199,30 +197,20 @@ const Dashboard = () => {
     setDownloadLimitReached(false);
   };
   
-  // Prepare templates with "New" badge
-  const prepareTemplatesWithNewBadge = (templates: Template[]) => {
-    // In a real app, we'd check the creation date against current date
-    // For this example, we're just marking random templates as "new"
-    return templates.map(template => ({
-      ...template,
-      isNew: Math.random() > 0.7, // 30% chance of being marked as new
-    }));
-  };
-  
   // Filter templates for free users
   const filterTemplatesForPlan = (templates: Template[]) => {
-    if (user?.plan === 'ultimate') return prepareTemplatesWithNewBadge(templates);
+    if (user?.plan === 'ultimate') return templates;
     
     // Show premium templates but they will be locked
-    return prepareTemplatesWithNewBadge(templates.map(template => ({
+    return templates.map(template => ({
       ...template,
       isPremium: template.isPremium || Math.random() > 0.6 // Randomly make some templates premium
-    })));
+    }));
   };
 
   // Prepare templates for each category
   const recommendedTemplates = filterTemplatesForPlan(featuredTemplates);
-  const weeklyNewTemplates = filterTemplatesForPlan(newTemplates);
+  const weeklyNewTemplates = filterTemplatesForPlan(newTemplates.filter(t => t.isNew));
   const mostDownloadedTemplates = filterTemplatesForPlan(popularTemplates);
   const exclusiveTemplates = user?.plan === 'ultimate' 
     ? filterTemplatesForPlan(featuredTemplates.slice(5, 15).map(t => ({...t, isPremium: true})))
@@ -231,32 +219,17 @@ const Dashboard = () => {
   return (
     <MemberLayout showWelcomeMessage={true}>
       <div className="max-w-6xl mx-auto">
-        {/* Personalized recommendations */}
-        <TemplateCarousel 
-          title={user?.plan === 'ultimate' ? 'Recomendado para você' : 'Templates em destaque'} 
-          templates={recommendedTemplates}
+        {/* Template categories section */}
+        <TemplateCategories
+          recommendedTemplates={recommendedTemplates}
+          newTemplates={weeklyNewTemplates}
+          popularTemplates={mostDownloadedTemplates}
+          exclusiveTemplates={exclusiveTemplates}
+          userPlan={user?.plan as 'free' | 'ultimate'}
+          onTemplateClick={handleTemplateClick}
+          onToggleFavorite={handleToggleFavorite}
+          favoritesIds={favorites}
         />
-        
-        {/* Recent uploads */}
-        <TemplateCarousel 
-          title="Novidades da semana" 
-          templates={weeklyNewTemplates}
-        />
-        
-        {/* Popular templates */}
-        <TemplateCarousel 
-          title="Mais baixados" 
-          templates={mostDownloadedTemplates}
-        />
-        
-        {/* Ultimate plan exclusive section */}
-        {user?.plan === 'ultimate' && (
-          <TemplateCarousel 
-            title="Conteúdo Exclusivo Ultimate" 
-            templates={exclusiveTemplates}
-            isPremiumSection={true}
-          />
-        )}
       </div>
       
       {/* Template details modal - only shown on desktop */}

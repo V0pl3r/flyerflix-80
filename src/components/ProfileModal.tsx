@@ -24,7 +24,8 @@ interface ProfileModalProps {
 
 const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   const [user, setUser] = useState<UserType | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [name, setName] = useState<string>('');
   const { toast } = useToast();
   
@@ -33,7 +34,7 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
-      setAvatarUrl(parsedUser.avatarUrl || '');
+      setAvatarPreview(parsedUser.avatarUrl || '');
       setName(parsedUser.name || '');
     }
   }, [open]);
@@ -43,7 +44,7 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
       const updatedUser = { 
         ...user, 
         name: name,
-        avatarUrl: avatarUrl
+        avatarUrl: avatarPreview
       };
       
       setUser(updatedUser);
@@ -62,10 +63,36 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // This is a simple demonstration - in a real app, you'd upload to a server
-      // and get back a URL. Here we're just creating a local object URL.
-      const localUrl = URL.createObjectURL(file);
-      setAvatarUrl(localUrl);
+      // Validar tamanho e formato do arquivo
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Formato inválido",
+          description: "Por favor, selecione uma imagem JPG ou PNG.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (file.size > maxSize) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "O tamanho máximo permitido é 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setAvatarFile(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
   
@@ -85,22 +112,22 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <Avatar className="h-24 w-24 border-2 border-flyerflix-red">
-                <AvatarImage src={avatarUrl} alt={user.name} className="object-cover" />
+                <AvatarImage src={avatarPreview} alt={user.name} className="object-cover" />
                 <AvatarFallback className="bg-flyerflix-black text-flyerflix-red text-lg">
                   {user.name.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <label 
                 htmlFor="avatar-upload" 
-                className="absolute bottom-0 right-0 bg-flyerflix-red text-white p-1.5 rounded-full cursor-pointer"
+                className="absolute bottom-0 right-0 bg-flyerflix-red text-white p-1.5 rounded-full cursor-pointer hover:bg-red-700 transition-colors"
               >
                 <Upload size={14} />
-                <span className="sr-only">Upload avatar</span>
+                <span className="sr-only">Fazer upload de foto</span>
               </label>
               <input 
                 type="file" 
                 id="avatar-upload" 
-                accept="image/*" 
+                accept="image/png, image/jpeg, image/jpg" 
                 className="hidden" 
                 onChange={handleFileUpload}
               />
