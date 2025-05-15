@@ -4,6 +4,7 @@ export type Template = {
   title: string;
   imageUrl: string;
   category: string;
+  description?: string; // Adding description as an optional property
   canvaUrl?: string;
   isPremium?: boolean;
   downloads?: number;
