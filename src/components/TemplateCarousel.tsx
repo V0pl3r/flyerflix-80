@@ -1,8 +1,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, Star, Users } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
 import TemplateCard from './TemplateCard';
+import TemplateSkeleton from './TemplateSkeleton';
 import { Template } from '../data/templates';
 
 interface TemplateCarouselProps {
@@ -37,6 +37,8 @@ const TemplateCarousel = ({
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [totalSlides, setTotalSlides] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(0);
+  const totalImages = templates.length;
 
   useEffect(() => {
     // Calculate total number of slides
@@ -54,6 +56,15 @@ const TemplateCarousel = ({
     window.addEventListener('resize', checkArrows);
     return () => window.removeEventListener('resize', checkArrows);
   }, [templates]);
+
+  // Reset image loaded count when templates change
+  useEffect(() => {
+    setImagesLoaded(0);
+  }, [templates]);
+
+  const handleImageLoad = () => {
+    setImagesLoaded(prev => prev + 1);
+  };
 
   const scrollLeft = () => {
     if (carouselRef.current) {
@@ -94,6 +105,8 @@ const TemplateCarousel = ({
   if (templates.length === 0 && !isLoading) {
     return null;
   }
+
+  const isFullyLoaded = imagesLoaded >= totalImages;
 
   return (
     <section className="py-6 w-full">
@@ -136,15 +149,9 @@ const TemplateCarousel = ({
           className="flex px-4 md:px-8 lg:px-12 xl:px-16 space-x-4 overflow-x-auto scrollbar-none pb-6 max-w-full scroll-smooth"
           onScroll={checkArrows}
         >
-          {isLoading ? (
+          {isLoading || !isFullyLoaded ? (
             // Loading skeletons
-            Array.from({ length: 5 }).map((_, index) => (
-              <div key={`skeleton-${index}`} className="flex-none w-[180px] md:w-[200px] lg:w-[220px]">
-                <div className="aspect-[9/16] bg-white/5 rounded-md overflow-hidden relative">
-                  <Skeleton className="h-full w-full" />
-                </div>
-              </div>
-            ))
+            <TemplateSkeleton count={5} />
           ) : templates.length > 0 ? (
             // Actual templates
             templates.map((template) => (
@@ -180,6 +187,14 @@ const TemplateCarousel = ({
                     </div>
                   </div>
                 )}
+                
+                {/* Hidden image loader to track load progress */}
+                <img 
+                  src={template.imageUrl} 
+                  alt=""
+                  className="hidden"
+                  onLoad={handleImageLoad}
+                />
               </div>
             ))
           ) : (

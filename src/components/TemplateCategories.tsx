@@ -2,9 +2,7 @@
 import { useState, useEffect } from 'react';
 import TemplateCarousel from './TemplateCarousel';
 import { Template } from '../data/templates';
-import { useToast } from '@/hooks/use-toast';
 import { EventType } from './TemplateFilters';
-import { getRecommendedTemplates } from '../data/templates';
 
 interface TemplateCategoriesProps {
   recommendedTemplates: Template[];
@@ -22,6 +20,7 @@ interface TemplateCategoriesProps {
   onToggleFavorite: (template: Template) => void;
   favoritesIds: string[];
   selectedEventType: EventType;
+  personalizedRecommendations: Template[];
 }
 
 const TemplateCategories = ({
@@ -39,30 +38,25 @@ const TemplateCategories = ({
   onTemplateClick,
   onToggleFavorite,
   favoritesIds,
-  selectedEventType
+  selectedEventType,
+  personalizedRecommendations
 }: TemplateCategoriesProps) => {
-  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
-  const [personalizedRecommendations, setPersonalizedRecommendations] = useState<Template[]>([]);
-
-  // Filter templates based on selected event type
-  const filterByEventType = (templates: Template[]) => {
-    if (selectedEventType === 'all') return templates;
-    return templates.filter(template => template.eventType === selectedEventType);
-  };
-
+  
   useEffect(() => {
-    // Generate personalized recommendations based on favorites
-    const recommendations = getRecommendedTemplates(favoritesIds);
-    setPersonalizedRecommendations(recommendations);
-    
-    // Simular um pequeno tempo de carregamento para uma melhor experiência do usuário
+    // Simulate a short loading time for better UX
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [favoritesIds, selectedEventType]);
+  }, [selectedEventType]);
+
+  // Filter templates based on selected event type
+  const filterByEventType = (templates: Template[] = []) => {
+    if (!templates || selectedEventType === 'all') return templates;
+    return templates.filter(template => template.eventType === selectedEventType);
+  };
 
   // Filter all template collections by the selected event type
   const filteredRecommended = filterByEventType(recommendedTemplates);
@@ -71,11 +65,11 @@ const TemplateCategories = ({
   const filteredExclusive = filterByEventType(exclusiveTemplates);
   const filteredWeeklyPopular = filterByEventType(weeklyPopularTemplates);
   const filteredUsedByCreators = filterByEventType(usedByCreatorsTemplates);
-  const filteredPageSettings = filterByEventType(personalizedRecommendations);
+  const filteredPersonalizedRecommendations = filterByEventType(personalizedRecommendations);
 
   // Custom section rendering based on event type selection
   const renderEventBasedSections = () => {
-    if (selectedEventType === 'pagode' && pagodeTemplates.length > 0) {
+    if (selectedEventType === 'pagode' && pagodeTemplates && pagodeTemplates.length > 0) {
       return (
         <TemplateCarousel
           title="Templates para Pagode"
@@ -89,7 +83,7 @@ const TemplateCategories = ({
       );
     }
     
-    if (selectedEventType === 'sertanejo' && sertanejoTemplates.length > 0) {
+    if (selectedEventType === 'sertanejo' && sertanejoTemplates && sertanejoTemplates.length > 0) {
       return (
         <TemplateCarousel
           title="Templates para Sertanejo"
@@ -103,7 +97,7 @@ const TemplateCategories = ({
       );
     }
     
-    if (selectedEventType === 'baile-funk' && funkTemplates.length > 0) {
+    if (selectedEventType === 'baile-funk' && funkTemplates && funkTemplates.length > 0) {
       return (
         <TemplateCarousel
           title="Templates para Baile Funk"
@@ -117,7 +111,7 @@ const TemplateCategories = ({
       );
     }
     
-    if (selectedEventType === 'aniversario' && birthdayTemplates.length > 0) {
+    if (selectedEventType === 'aniversario' && birthdayTemplates && birthdayTemplates.length > 0) {
       return (
         <TemplateCarousel
           title="Templates para Aniversário"
@@ -134,16 +128,25 @@ const TemplateCategories = ({
     return null;
   };
 
-  return (
-    <div className="space-y-2">
-      {/* Event-specific templates - shows for specific event type selections */}
-      {renderEventBasedSections()}
-      
-      {/* Personalized Recommendations - based on favorites */}
-      {favoritesIds.length > 0 && filteredPageSettings.length > 0 && (
+  // Dynamic ordering of sections based on selected event type
+  const renderTemplateCarousels = () => {
+    const sections = [];
+    
+    // Always show event-specific templates first when filtering
+    if (selectedEventType !== 'all') {
+      const eventBasedSection = renderEventBasedSections();
+      if (eventBasedSection) {
+        sections.push(eventBasedSection);
+      }
+    }
+    
+    // Personalized recommendations - based on favorites
+    if (filteredPersonalizedRecommendations && filteredPersonalizedRecommendations.length > 0) {
+      sections.push(
         <TemplateCarousel
+          key="personalized"
           title="Sugeridos para você"
-          templates={filteredPageSettings}
+          templates={filteredPersonalizedRecommendations}
           onTemplateClick={onTemplateClick}
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
@@ -151,11 +154,14 @@ const TemplateCategories = ({
           isLoading={isLoading}
           isRecommended={true}
         />
-      )}
-      
-      {/* Weekly Popular Templates */}
-      {filteredWeeklyPopular.length > 0 && (
+      );
+    }
+    
+    // Weekly Popular Templates
+    if (filteredWeeklyPopular && filteredWeeklyPopular.length > 0) {
+      sections.push(
         <TemplateCarousel
+          key="weeklyPopular"
           title="Populares da Semana"
           templates={filteredWeeklyPopular}
           onTemplateClick={onTemplateClick}
@@ -165,11 +171,14 @@ const TemplateCategories = ({
           isLoading={isLoading}
           isWeeklyPopular={true}
         />
-      )}
-      
-      {/* Used By Other Creators */}
-      {filteredUsedByCreators.length > 0 && (
+      );
+    }
+    
+    // Used By Other Creators
+    if (filteredUsedByCreators && filteredUsedByCreators.length > 0) {
+      sections.push(
         <TemplateCarousel
+          key="usedByCreators"
           title="Usados por outros criadores"
           templates={filteredUsedByCreators}
           onTemplateClick={onTemplateClick}
@@ -179,11 +188,14 @@ const TemplateCategories = ({
           isLoading={isLoading}
           isCreatorUsed={true}
         />
-      )}
-      
-      {/* Recomendado para você / Templates em destaque */}
-      {filteredRecommended.length > 0 && (
+      );
+    }
+    
+    // Recommended for you / Featured templates
+    if (filteredRecommended && filteredRecommended.length > 0) {
+      sections.push(
         <TemplateCarousel 
+          key="recommended"
           title={userPlan === 'ultimate' ? 'Recomendado para você' : 'Templates em destaque'} 
           templates={filteredRecommended}
           onTemplateClick={onTemplateClick}
@@ -192,11 +204,14 @@ const TemplateCategories = ({
           showFavoriteButtons={true}
           isLoading={isLoading}
         />
-      )}
-      
-      {/* Novidades da semana */}
-      {filteredNew.length > 0 && (
+      );
+    }
+    
+    // New templates of the week
+    if (filteredNew && filteredNew.length > 0) {
+      sections.push(
         <TemplateCarousel 
+          key="new"
           title="Novidades da semana" 
           templates={filteredNew}
           onTemplateClick={onTemplateClick}
@@ -205,11 +220,14 @@ const TemplateCategories = ({
           showFavoriteButtons={true}
           isLoading={isLoading}
         />
-      )}
-      
-      {/* Mais acessíveis / Mais baixados */}
-      {filteredPopular.length > 0 && (
+      );
+    }
+    
+    // Most accessible/downloaded
+    if (filteredPopular && filteredPopular.length > 0) {
+      sections.push(
         <TemplateCarousel 
+          key="popular"
           title="Mais acessíveis" 
           templates={filteredPopular}
           onTemplateClick={onTemplateClick}
@@ -218,11 +236,14 @@ const TemplateCategories = ({
           showFavoriteButtons={true}
           isLoading={isLoading}
         />
-      )}
-      
-      {/* Ultimate plan exclusive section */}
-      {userPlan === 'ultimate' && filteredExclusive.length > 0 && (
+      );
+    }
+    
+    // Ultimate plan exclusive section
+    if (userPlan === 'ultimate' && filteredExclusive && filteredExclusive.length > 0) {
+      sections.push(
         <TemplateCarousel 
+          key="exclusive"
           title="Conteúdo Exclusivo Ultimate" 
           templates={filteredExclusive}
           isPremiumSection={true}
@@ -232,7 +253,23 @@ const TemplateCategories = ({
           showFavoriteButtons={true}
           isLoading={isLoading}
         />
-      )}
+      );
+    }
+    
+    if (selectedEventType === 'all') {
+      // For homepage, add event-based templates at the end
+      const eventBasedSection = renderEventBasedSections();
+      if (eventBasedSection) {
+        sections.push(eventBasedSection);
+      }
+    }
+    
+    return sections;
+  };
+
+  return (
+    <div className="space-y-2">
+      {renderTemplateCarousels()}
     </div>
   );
 };

@@ -7,7 +7,9 @@ import TemplateFilters, { EventType } from '../components/TemplateFilters';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Lock, Infinity, Heart, ExternalLink } from 'lucide-react';
+import { Lock, Infinity, Heart, ExternalLink, Check } from 'lucide-react';
+import FeaturedTemplate from '@/components/FeaturedTemplate';
+import YouMayAlsoLike from '@/components/YouMayAlsoLike';
 import { 
   featuredTemplates, 
   newTemplates, 
@@ -18,10 +20,12 @@ import {
   pagodeTemplates,
   sertanejoTemplates,
   funkTemplates,
-  birthdayTemplates
+  birthdayTemplates,
+  getRecommendedTemplates
 } from '../data/templates';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+// User and history types
 type UserType = {
   name: string;
   email: string;
@@ -46,6 +50,8 @@ const Dashboard = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [downloads, setDownloads] = useState<DownloadHistoryItem[]>([]);
+  const [downloadSuccess, setDownloadSuccess] = useState<boolean>(false);
+  const [featuredTemplate, setFeaturedTemplate] = useState<Template | null>(null);
   
   // UI filters and state
   const [selectedEventType, setSelectedEventType] = useState<EventType>('all');
@@ -71,6 +77,9 @@ const Dashboard = () => {
     if (storedDownloads) {
       setDownloads(JSON.parse(storedDownloads));
     }
+
+    // Set featured template (could come from an API in a real app)
+    setFeaturedTemplate(featuredTemplates[0]);
   }, []);
   
   const handleTemplateClick = (template: Template) => {
@@ -163,6 +172,10 @@ const Dashboard = () => {
     // Add to general history
     addToHistory(selectedTemplate, 'download');
     
+    // Set download success state for feedback
+    setDownloadSuccess(true);
+    setTimeout(() => setDownloadSuccess(false), 3000);
+    
     // Process download - redirect to Canva
     if (selectedTemplate.canvaUrl) {
       window.open(selectedTemplate.canvaUrl, '_blank');
@@ -174,6 +187,30 @@ const Dashboard = () => {
     });
     
     setSelectedTemplate(null);
+  };
+
+  const handleUseNow = (template: Template) => {
+    if (user?.plan === 'free' && template.isPremium) {
+      toast({
+        title: "Template Premium",
+        description: "Faça upgrade para o plano Ultimate para acessar este template.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Add to history
+    addToHistory(template, 'download');
+    
+    // Open canva URL
+    if (template.canvaUrl) {
+      window.open(template.canvaUrl, '_blank');
+    }
+    
+    toast({
+      title: "Template aberto!",
+      description: `${template.title} foi aberto no Canva.`,
+    });
   };
   
   const handleToggleFavorite = (template: Template) => {
@@ -229,6 +266,19 @@ const Dashboard = () => {
     }));
   };
 
+  // Combine all templates for recommendations
+  const allTemplates = [
+    ...featuredTemplates,
+    ...newTemplates,
+    ...popularTemplates,
+    ...weeklyPopularTemplates,
+    ...usedByCreatorsTemplates,
+    ...pagodeTemplates, 
+    ...sertanejoTemplates,
+    ...funkTemplates,
+    ...birthdayTemplates
+  ];
+
   // Prepare templates for each category
   const recommendedTemplates = filterTemplatesForPlan(featuredTemplates);
   const weeklyNewTemplates = filterTemplatesForPlan(newTemplates.filter(t => t.isNew));
@@ -242,15 +292,35 @@ const Dashboard = () => {
   const filteredSertanejoTemplates = filterTemplatesForPlan(sertanejoTemplates);
   const filteredFunkTemplates = filterTemplatesForPlan(funkTemplates);
   const filteredBirthdayTemplates = filterTemplatesForPlan(birthdayTemplates);
+  const personalizedRecommendations = filterTemplatesForPlan(getRecommendedTemplates(favorites));
 
   return (
     <MemberLayout showWelcomeMessage={true}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Event type filter */}
         <TemplateFilters 
           onFilterChange={handleFilterChange}
           selectedEventType={selectedEventType}
         />
+        
+        {/* Featured template - only show on homepage (not when filtering) */}
+        {selectedEventType === 'all' && featuredTemplate && (
+          <FeaturedTemplate 
+            template={featuredTemplate} 
+            onUseNow={handleUseNow}
+          />
+        )}
+        
+        {/* You may also like section - only show if user has downloads and not filtering */}
+        {selectedEventType === 'all' && downloads.length > 0 && (
+          <YouMayAlsoLike
+            downloads={downloads}
+            allTemplates={allTemplates}
+            onTemplateClick={handleTemplateClick}
+            onToggleFavorite={handleToggleFavorite}
+            favoritesIds={favorites}
+          />
+        )}
         
         {/* Template categories section */}
         <TemplateCategories
@@ -269,6 +339,7 @@ const Dashboard = () => {
           onToggleFavorite={handleToggleFavorite}
           favoritesIds={favorites}
           selectedEventType={selectedEventType}
+          personalizedRecommendations={personalizedRecommendations}
         />
       </div>
       
@@ -344,12 +415,40 @@ const Dashboard = () => {
                     </Button>
                     
                     <Button 
-                      className="bg-flyerflix-red hover:bg-red-700 w-full min-h-[44px]"
+                      className={`bg-flyerflix-red hover:bg-red-700 w-full min-h-[44px] ${
+                        downloadSuccess ? 'bg-green-600 hover:bg-green-700' : ''
+                      }`}
                       onClick={handleDownload}
                     >
-                      <ExternalLink size={16} className="mr-2" />
-                      Editar no Canva
+                      {downloadSuccess ? (
+                        <>
+                          <Check size={16} className="mr-2" />
+                          Baixado com sucesso!
+                        </>
+                      ) : (
+                        <>
+                          <ExternalLink size={16} className="mr-2" />
+                          Editar no Canva
+                        </>
+                      )}
                     </Button>
+
+                    {downloadSuccess && (
+                      <Button 
+                        variant="outline"
+                        className="text-white border-white/20 hover:bg-white/10 w-full"
+                        onClick={() => {
+                          setSelectedTemplate(null);
+                          // Logic to show more like this
+                          toast({
+                            title: "Mais templates semelhantes",
+                            description: "Mostrando templates similares...",
+                          });
+                        }}
+                      >
+                        Ver mais como este
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -358,7 +457,7 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Download limit reached dialog - make responsive */}
+      {/* Download limit reached dialog */}
       <Dialog open={downloadLimitReached} onOpenChange={setDownloadLimitReached}>
         <DialogContent className="bg-[#1e1e1e] border-white/10 text-white w-full sm:max-w-md md:max-w-lg">
           <DialogHeader>
