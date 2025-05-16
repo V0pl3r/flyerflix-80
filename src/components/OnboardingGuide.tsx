@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import OnboardingTooltip from './OnboardingTooltip';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +62,7 @@ const OnboardingGuide = () => {
     toast({
       title: "Tutorial pulado",
       description: "Você pode acessar ajuda a qualquer momento pelo menu.",
+      className: "animate-slide-in-right"
     });
   };
   

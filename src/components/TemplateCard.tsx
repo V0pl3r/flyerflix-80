@@ -2,7 +2,7 @@
 import { Lock, Heart, ExternalLink, Eye } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Template } from '../data/templates';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface TemplateCardProps {
@@ -27,22 +27,40 @@ const TemplateCard = ({
   onPreview
 }: TemplateCardProps) => {
   const [isHovering, setIsHovering] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const isDesktop = window.innerWidth >= 1024; // Simple check for desktop
+  
+  useEffect(() => {
+    // Apply subtle entrance animation when the card first appears
+    const card = cardRef.current;
+    if (card) {
+      card.classList.add('opacity-0', 'translate-y-4');
+      setTimeout(() => {
+        card.classList.remove('opacity-0', 'translate-y-4');
+        card.classList.add('opacity-100', 'translate-y-0', 'transition-all', 'duration-500');
+      }, 100 + Math.random() * 300); // Staggered timing for grid of cards
+    }
+  }, []);
   
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleFavorite?.();
+    if (onToggleFavorite) {
+      onToggleFavorite();
+    }
   };
 
   const handlePreviewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onPreview?.();
+    if (onPreview) {
+      onPreview();
+    }
   };
 
   return (
     <div 
+      ref={cardRef}
       className={cn(
-        "template-card group relative cursor-pointer transition-all duration-300 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-105",
+        "template-card group relative cursor-pointer transition-all duration-300 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.03]",
         className
       )}
       onClick={onClick}
@@ -53,7 +71,7 @@ const TemplateCard = ({
         <img 
           src={template.imageUrl} 
           alt={template.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
           loading="lazy"
         />
         
@@ -66,16 +84,16 @@ const TemplateCard = ({
       </div>
       
       {/* Default info overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-end p-3 rounded-lg">
-        <p className="text-white font-medium text-sm line-clamp-2">{template.title}</p>
-        <p className="text-white/70 text-xs mt-1">Clique para visualizar</p>
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3 rounded-lg">
+        <p className="text-white font-medium text-sm line-clamp-2 transform transition-all duration-300 group-hover:translate-y-0 translate-y-2">{template.title}</p>
+        <p className="text-white/70 text-xs mt-1 transform transition-all duration-300 group-hover:translate-y-0 translate-y-4 group-hover:opacity-100 opacity-0">Clique para visualizar</p>
       </div>
       
       {/* Quick action buttons */}
       <div className="absolute bottom-2 right-2 z-20 flex gap-1">
         {onPreview && (
           <button
-            className="p-1.5 rounded-full bg-black/50 hover:bg-flyerflix-red/80 transition-colors"
+            className="p-1.5 rounded-full bg-black/50 hover:bg-flyerflix-red/80 transition-colors transform transition-transform duration-200 active:scale-90"
             onClick={handlePreviewClick}
             aria-label="Visualizar"
           >
@@ -96,7 +114,7 @@ const TemplateCard = ({
             {onPreview && (
               <Button 
                 variant="outline"
-                className="mt-2 bg-white/10 text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                className="mt-2 bg-white/10 text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-200 hover:-translate-y-0.5"
                 onClick={handlePreviewClick}
               >
                 <Eye size={12} className="mr-1" />
@@ -104,7 +122,7 @@ const TemplateCard = ({
               </Button>
             )}
             <button 
-              className="mt-2 bg-flyerflix-red text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-red-700 transition-colors"
+              className="mt-2 bg-flyerflix-red text-white text-xs py-1.5 px-3 rounded-full flex items-center justify-center hover:bg-red-700 transition-all duration-200 hover:-translate-y-0.5"
             >
               <ExternalLink size={12} className="mr-1" />
               Visualizar completo
@@ -123,12 +141,12 @@ const TemplateCard = ({
       {/* Favorite button */}
       {showFavoriteButton && (
         <button
-          className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-black/30 hover:bg-black/50 transition-colors"
+          className="absolute top-2 right-2 z-20 p-1.5 rounded-full bg-black/30 hover:bg-black/50 transition-colors transform transition-transform duration-200 active:scale-90"
           onClick={handleFavoriteClick}
           aria-label={isFavorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
         >
           <Heart 
-            className={cn("h-4 w-4 transition-colors", isFavorite ? "text-flyerflix-red fill-flyerflix-red" : "text-white")} 
+            className={cn("h-4 w-4 transition-all duration-300", isFavorite ? "text-flyerflix-red fill-flyerflix-red scale-110" : "text-white")} 
           />
         </button>
       )}
