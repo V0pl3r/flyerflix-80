@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import TemplateCarousel from './TemplateCarousel';
 import { Template } from '../data/templates';
@@ -18,9 +17,11 @@ interface TemplateCategoriesProps {
   userPlan: 'free' | 'ultimate';
   onTemplateClick: (template: Template) => void;
   onToggleFavorite: (template: Template) => void;
+  onPreviewTemplate: (template: Template) => void;
   favoritesIds: string[];
   selectedEventType: EventType;
   personalizedRecommendations: Template[];
+  isLoading?: boolean;
 }
 
 const TemplateCategories = ({
@@ -37,16 +38,18 @@ const TemplateCategories = ({
   userPlan,
   onTemplateClick,
   onToggleFavorite,
+  onPreviewTemplate,
   favoritesIds,
   selectedEventType,
-  personalizedRecommendations
+  personalizedRecommendations,
+  isLoading
 }: TemplateCategoriesProps) => {
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLocalLoading, setIsLocalLoading] = useState(true);
   
   useEffect(() => {
     // Simulate a short loading time for better UX
     const timer = setTimeout(() => {
-      setIsLoading(false);
+      setIsLocalLoading(false);
     }, 800);
 
     return () => clearTimeout(timer);
@@ -78,7 +81,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -92,7 +95,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -106,7 +109,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -120,7 +123,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -151,7 +154,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
           isRecommended={true}
         />
       );
@@ -168,7 +171,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
           isWeeklyPopular={true}
         />
       );
@@ -185,7 +188,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
           isCreatorUsed={true}
         />
       );
@@ -202,7 +205,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -218,7 +221,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -234,7 +237,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }
@@ -251,7 +254,7 @@ const TemplateCategories = ({
           onToggleFavorite={onToggleFavorite}
           favoritesIds={favoritesIds}
           showFavoriteButtons={true}
-          isLoading={isLoading}
+          isLoading={isLoading || isLocalLoading}
         />
       );
     }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import OnboardingTooltip from './OnboardingTooltip';
 import { useToast } from '@/hooks/use-toast';
@@ -72,7 +71,6 @@ const OnboardingGuide = () => {
     toast({
       title: "Onboarding concluído!",
       description: "Agora você está pronto para aproveitar todos os recursos.",
-      variant: "success"
     });
   };
   
