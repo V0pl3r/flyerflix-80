@@ -1,102 +1,162 @@
 
-import { useState } from "react";
-import { useAuth } from "@/hooks/useAuth";
-import { Link, Navigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
+import { Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
-  const { user, loading, signIn } = useAuth();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [formLoading, setFormLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  const logoRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  useEffect(() => {
+    // Animate elements on mount
+    const logo = logoRef.current;
+    const form = formRef.current;
+    
+    if (logo) {
+      logo.classList.add('opacity-0', 'scale-90');
+      setTimeout(() => {
+        logo.classList.remove('opacity-0', 'scale-90');
+        logo.classList.add('transition-all', 'duration-700', 'opacity-100', 'scale-100');
+      }, 100);
+    }
+    
+    if (form) {
+      form.classList.add('opacity-0', 'translate-y-10');
+      setTimeout(() => {
+        form.classList.remove('opacity-0', 'translate-y-10');
+        form.classList.add('transition-all', 'duration-500', 'opacity-100', 'translate-y-0');
+      }, 400);
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormLoading(true);
-    await signIn(email, password);
-    setFormLoading(false);
+    setIsLoading(true);
+    
+    // This is a mock login - would be replaced with actual authentication
+    setTimeout(() => {
+      // Mock successful login
+      localStorage.setItem('flyerflix-user', JSON.stringify({ 
+        name: 'Usuário Teste', 
+        email: email, 
+        plan: 'free',
+        downloads: 0,
+        maxDownloads: 2
+      }));
+      
+      toast({
+        title: "Login realizado com sucesso!",
+        description: "Bem-vindo de volta à Flyerflix.",
+        className: "toast-enter",
+      });
+      
+      setIsLoading(false);
+      navigate('/dashboard');
+    }, 1000);
   };
 
-  // If user is already logged in, redirect to dashboard
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#ea384c]">FLYERFLIX</h1>
-          <p className="text-gray-400 mt-2">Entre na sua conta para acessar a plataforma</p>
-        </div>
+    <div className="min-h-screen bg-flyerflix-black flex flex-col items-center justify-center p-4 overflow-hidden">
+      <div 
+        ref={logoRef} 
+        className="mb-10"
+      >
+        <Link to="/">
+          <h1 className="text-flyerflix-red text-4xl font-bold hover:scale-105 transition-all duration-300">FLYERFLIX</h1>
+        </Link>
+      </div>
+      
+      <div 
+        ref={formRef}
+        className="w-full max-w-md bg-[#1e1e1e] p-8 rounded-lg shadow-lg border border-white/10 animate-fade-in"
+      >
+        <h2 className="text-2xl font-bold text-white mb-6">Entrar</h2>
         
-        <Card className="bg-[#222222] border-none shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-white">Login</CardTitle>
-            <CardDescription className="text-gray-400">
-              Entre com seu email e senha abaixo
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-white">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-[#1A1F2C] border-gray-700 text-white"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-white">Senha</Label>
-                  <Link to="/esqueci-senha" className="text-sm text-[#ea384c] hover:underline">
-                    Esqueceu a senha?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="********"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-[#1A1F2C] border-gray-700 text-white"
-                  required
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full bg-[#ea384c] hover:bg-[#ea384c]/80"
-                disabled={formLoading || loading}
-              >
-                {(formLoading || loading) ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4 items-center">
-            <div className="text-gray-400 text-sm">
-              Não tem uma conta?{" "}
-              <Link to="/register" className="text-[#ea384c] hover:underline">
-                Registre-se
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-1">
+            <label htmlFor="email" className="block text-sm font-medium text-white/70 mb-1">
+              E-mail
+            </label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="seu@email.com"
+              className="bg-[#333] border-[#444] text-white animated-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="password" className="block text-sm font-medium text-white/70">
+                Senha
+              </label>
+              <Link to="/recuperar-senha" className="text-xs text-white/70 hover:text-flyerflix-red transition-all duration-200">
+                Esqueceu a senha?
               </Link>
             </div>
-          </CardFooter>
-        </Card>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                className="bg-[#333] border-[#444] text-white pr-10 animated-input"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button 
+                type="button"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 hover:text-white transition-colors duration-200"
+                onClick={togglePasswordVisibility}
+                aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+          </div>
+          
+          <Button 
+            type="submit" 
+            className="w-full bg-flyerflix-red hover:bg-red-700 transition-all duration-300 hover:shadow-lg active:scale-98 mt-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Entrando...
+              </span>
+            ) : 'Entrar'}
+          </Button>
+        </form>
+        
+        <div className="mt-6 text-center">
+          <p className="text-white/70">
+            Não tem uma conta?{' '}
+            <Link to="/register" className="text-flyerflix-red hover:underline transition-all duration-200">
+              Registre-se
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
