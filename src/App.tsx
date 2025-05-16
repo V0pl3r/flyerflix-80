@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/hooks/useAuth"; // Import the AuthProvider
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -36,41 +37,43 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/template/:id" element={<TemplateView />} />
-          <Route path="/perfil" element={<Profile />} />
-          <Route path="/meus-downloads" element={<Downloads />} />
-          <Route path="/favoritos" element={<Favorites />} />
-          <Route path="/historico" element={<History />} />
-          <Route path="/configuracoes" element={<Settings />} />
-          <Route path="/area-membro" element={<Dashboard />} />
-          <Route path="/termos-de-uso" element={<TermsOfUse />} />
-          <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} />
-            <Route path="templates" element={<AdminTemplates />} />
-            <Route path="categorias" element={<AdminCategories />} />
-            <Route path="usuarios" element={<AdminUsers />} />
-            <Route path="assinaturas" element={<AdminSubscriptions />} />
-            <Route path="financeiro" element={<AdminFinancial />} />
-            <Route path="relatorios" element={<AdminReports />} />
-            <Route path="configuracoes" element={<AdminSettings />} />
-            <Route path="suporte" element={<AdminSupport />} />
-            <Route path="planos" element={<AdminPlans />} />
-          </Route>
-          
-          {/* Catch-all */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/template/:id" element={<TemplateView />} />
+            <Route path="/perfil" element={<Profile />} />
+            <Route path="/meus-downloads" element={<Downloads />} />
+            <Route path="/favoritos" element={<Favorites />} />
+            <Route path="/historico" element={<History />} />
+            <Route path="/configuracoes" element={<Settings />} />
+            <Route path="/area-membro" element={<Dashboard />} />
+            <Route path="/termos-de-uso" element={<TermsOfUse />} />
+            <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path="templates" element={<AdminTemplates />} />
+              <Route path="categorias" element={<AdminCategories />} />
+              <Route path="usuarios" element={<AdminUsers />} />
+              <Route path="assinaturas" element={<AdminSubscriptions />} />
+              <Route path="financeiro" element={<AdminFinancial />} />
+              <Route path="relatorios" element={<AdminReports />} />
+              <Route path="configuracoes" element={<AdminSettings />} />
+              <Route path="suporte" element={<AdminSupport />} />
+              <Route path="planos" element={<AdminPlans />} />
+            </Route>
+            
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
