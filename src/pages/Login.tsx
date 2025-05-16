@@ -1,18 +1,16 @@
 
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { toast } = useToast();
+  const { login, loading } = useAuth();
   
   const logoRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -39,30 +37,9 @@ const Login = () => {
     }
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    // This is a mock login - would be replaced with actual authentication
-    setTimeout(() => {
-      // Mock successful login
-      localStorage.setItem('flyerflix-user', JSON.stringify({ 
-        name: 'Usuário Teste', 
-        email: email, 
-        plan: 'free',
-        downloads: 0,
-        maxDownloads: 2
-      }));
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta à Flyerflix.",
-        className: "toast-enter",
-      });
-      
-      setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    await login(email, password);
   };
 
   const togglePasswordVisibility = () => {
@@ -135,9 +112,9 @@ const Login = () => {
           <Button 
             type="submit" 
             className="w-full bg-flyerflix-red hover:bg-red-700 transition-all duration-300 hover:shadow-lg active:scale-98 mt-2"
-            disabled={isLoading}
+            disabled={loading}
           >
-            {isLoading ? (
+            {loading ? (
               <span className="flex items-center justify-center">
                 <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

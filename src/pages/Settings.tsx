@@ -8,17 +8,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Infinity } from 'lucide-react';
-
-type UserType = {
-  name: string;
-  email: string;
-  plan: string;
-  downloads: number;
-  maxDownloads: number | 'unlimited';
-};
+import { useAuth } from '@/hooks/useAuth';
 
 const Settings = () => {
-  const [user, setUser] = useState<UserType | null>(null);
+  const { user, updateUser, createCheckoutSession, checkSubscription } = useAuth();
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -36,17 +29,14 @@ const Settings = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    const userData = localStorage.getItem('flyerflix-user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+    if (user) {
       setProfileData({
         ...profileData,
-        name: parsedUser.name,
-        email: parsedUser.email
+        name: user.name,
+        email: user.email
       });
     }
-  }, []);
+  }, [user]);
   
   const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -69,14 +59,10 @@ const Settings = () => {
     }
     
     if (user) {
-      const updatedUser = {
-        ...user,
+      updateUser({
         name: profileData.name,
         email: profileData.email
-      };
-      
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      });
       
       toast({
         title: "Perfil atualizado",
@@ -97,18 +83,31 @@ const Settings = () => {
     });
   };
   
-  const handleUpgrade = () => {
-    toast({
-      title: "Upgrade em breve!",
-      description: "Estamos preparando essa funcionalidade."
-    });
+  const handleUpgrade = async () => {
+    const checkoutUrl = await createCheckoutSession();
+    
+    if (checkoutUrl) {
+      // Open Stripe checkout in a new tab
+      window.open(checkoutUrl, '_blank');
+    }
   };
   
-  const handleDowngrade = () => {
-    toast({
-      title: "Downgrade em breve!",
-      description: "Estamos preparando essa funcionalidade."
-    });
+  const handleManageSubscription = async () => {
+    try {
+      // This would be integrated with Stripe's Customer Portal
+      // For now, we'll just check if the subscription status is up to date
+      await checkSubscription();
+      toast({
+        title: "Portal do cliente",
+        description: "Esta funcionalidade estará disponível em breve."
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar o gerenciamento de assinatura.",
+        variant: "destructive"
+      });
+    }
   };
   
   const handleDeleteAccount = () => {
@@ -334,7 +333,7 @@ const Settings = () => {
                             Ativo
                           </span>
                         </h3>
-                        <p className="text-white/70 text-sm mt-1">Renovação em 15/06/2025</p>
+                        <p className="text-white/70 text-sm mt-1">Renovação automática mensal</p>
                       </div>
                       <div className="text-right">
                         <div className="font-bold">R$23,90/mês</div>
@@ -349,20 +348,9 @@ const Settings = () => {
                       <Button
                         variant="outline"
                         className="text-white border-white/20 hover:bg-white/10"
-                        onClick={() => toast({
-                          title: "Faturamento em breve!",
-                          description: "Esta funcionalidade estará disponível em breve."
-                        })}
+                        onClick={handleManageSubscription}
                       >
-                        Gerenciar pagamento
-                      </Button>
-                      
-                      <Button
-                        variant="outline"
-                        className="text-white/70 border-white/20 hover:bg-white/10"
-                        onClick={handleDowngrade}
-                      >
-                        Cancelar assinatura
+                        Gerenciar assinatura
                       </Button>
                     </div>
                   </div>

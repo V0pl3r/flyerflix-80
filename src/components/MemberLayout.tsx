@@ -1,11 +1,13 @@
 
 import { ReactNode, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
 import { X, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/components/ui/sonner';
 
 interface MemberLayoutProps {
   children: ReactNode;
@@ -14,27 +16,49 @@ interface MemberLayoutProps {
 
 const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
-  const [isPlanFree, setIsPlanFree] = useState(false);
   const [firstVisit, setFirstVisit] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
+  
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const location = useLocation();
+  const { toast: uiToast } = useToast();
+  const { user, logout, createCheckoutSession, checkSubscription } = useAuth();
+  
+  const isPlanFree = user?.plan === 'free';
   
   useEffect(() => {
-    const user = localStorage.getItem('flyerflix-user');
-    
     if (!user) {
       navigate('/login');
       return;
     }
     
-    const userData = JSON.parse(user);
-    const isFree = userData.plan === 'free';
-    setIsPlanFree(isFree);
+    // Check for upgrade query parameter
+    const queryParams = new URLSearchParams(location.search);
+    const upgradeStatus = queryParams.get('upgrade');
+    
+    if (upgradeStatus === 'success') {
+      toast.success("Assinatura realizada!", {
+        description: "Seu plano Ultimate foi ativado. Aproveite todos os benefícios!",
+        duration: 6000,
+      });
+      
+      // Remove the query parameter
+      navigate(location.pathname, { replace: true });
+      
+      // Check the subscription status to update the user object
+      checkSubscription();
+    } else if (upgradeStatus === 'canceled') {
+      toast.info("Upgrade cancelado", {
+        description: "O processo de upgrade foi cancelado. Você pode tentar novamente quando desejar.",
+      });
+      
+      // Remove the query parameter
+      navigate(location.pathname, { replace: true });
+    }
     
     // Show banner for free users on their first visit
-    if (isFree && showWelcomeMessage) {
+    if (isPlanFree && showWelcomeMessage) {
       const hasSeenWelcome = localStorage.getItem('flyerflix-welcome-seen');
       if (!hasSeenWelcome) {
         setShowBanner(true);
@@ -70,19 +94,19 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     return () => {
       window.removeEventListener('resize', checkIsMobile);
     };
-  }, [navigate, showWelcomeMessage]);
+  }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription]);
   
-  const handleUpgrade = () => {
-    toast({
-      title: "Upgrade em breve!",
-      description: "Estamos preparando essa funcionalidade.",
-      className: "animate-slide-in-right"
-    });
+  const handleUpgrade = async () => {
+    const checkoutUrl = await createCheckoutSession();
+    
+    if (checkoutUrl) {
+      // Open the Stripe checkout in a new tab
+      window.open(checkoutUrl, '_blank');
+    }
   };
   
   const handleLogout = () => {
-    localStorage.removeItem('flyerflix-user');
-    navigate('/login');
+    logout();
   };
 
   return (
