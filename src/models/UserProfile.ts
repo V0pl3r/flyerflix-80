@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 export interface UserProfile {
   id: string;
@@ -44,8 +45,10 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile | nu
     is_hidden: data.is_hidden,
     downloads_today: data.downloads_today,
     last_download_date: data.last_download_date,
-    favorites: data.favorites,
-    download_history: data.download_history,
+    // Converter Json para string[] se não for null
+    favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
+    // Converter Json para any[] se não for null
+    download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
     created_at: data.created_at,
     updated_at: data.updated_at
   };
@@ -97,8 +100,10 @@ export async function updateUserProfile(profile: Partial<UserProfile>): Promise<
     is_hidden: data.is_hidden,
     downloads_today: data.downloads_today,
     last_download_date: data.last_download_date,
-    favorites: data.favorites,
-    download_history: data.download_history,
+    // Converter Json para string[] se não for null
+    favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
+    // Converter Json para any[] se não for null
+    download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
     created_at: data.created_at,
     updated_at: data.updated_at
   };
@@ -120,7 +125,10 @@ export async function addToFavorites(userId: string, templateId: string): Promis
   }
 
   // Verificar se temos os dados de favoritos
-  const currentFavorites = data?.favorites || [];
+  // Garantir que favorites seja um array, mesmo que venha como null ou undefined
+  const currentFavorites = Array.isArray(data?.favorites) 
+    ? data.favorites 
+    : (data?.favorites ? [] : []);
 
   // Verificar se o template já está nos favoritos
   if (currentFavorites.includes(templateId)) {
@@ -158,7 +166,10 @@ export async function removeFromFavorites(userId: string, templateId: string): P
   }
 
   // Verificar se temos os dados de favoritos
-  const currentFavorites = data?.favorites || [];
+  // Garantir que favorites seja um array, mesmo que venha como null ou undefined
+  const currentFavorites = Array.isArray(data?.favorites) 
+    ? data.favorites 
+    : (data?.favorites ? [] : []);
 
   // Filtrar o templateId a ser removido
   const updatedFavorites = currentFavorites.filter(id => id !== templateId);
@@ -199,8 +210,11 @@ export async function recordTemplateDownload(
     return false;
   }
 
-  // Extrair os dados obtidos
-  const downloadHistory = data?.download_history || [];
+  // Extrair os dados obtidos e garantir que são arrays mesmo quando vierem como null
+  const downloadHistory = Array.isArray(data?.download_history) 
+    ? data.download_history 
+    : (data?.download_history ? [] : []);
+    
   const lastDownloadDate = data?.last_download_date;
   let downloadsToday = data?.downloads_today || 0;
 
