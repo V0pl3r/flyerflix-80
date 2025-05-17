@@ -13,6 +13,11 @@ export interface UserProfile {
   download_history: DownloadHistory[];
   created_at?: string;
   updated_at?: string;
+  // These fields might be in the database but not used in our app
+  first_name?: string;
+  last_name?: string;
+  is_hidden?: boolean;
+  role?: string;
 }
 
 export interface DownloadHistory {
@@ -33,7 +38,26 @@ export async function getUserProfile(userId: string): Promise<UserProfile | null
     return null;
   }
   
-  return data as UserProfile;
+  // Ensure all required fields have default values
+  const profile: UserProfile = {
+    id: data.id,
+    email: data.email || '',
+    name: data.name || data.first_name || '',
+    avatar_url: data.avatar_url,
+    plan: (data.plan as 'free' | 'ultimate') || 'free',
+    downloads_today: data.downloads_today || 0,
+    last_download_date: data.last_download_date,
+    favorites: data.favorites || [],
+    download_history: data.download_history || [],
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    first_name: data.first_name,
+    last_name: data.last_name,
+    is_hidden: data.is_hidden,
+    role: data.role
+  };
+  
+  return profile;
 }
 
 export async function updateUserProfile(
@@ -58,7 +82,22 @@ export async function updateUserProfile(
     return null;
   }
   
-  return data as UserProfile;
+  // Convert the response to match our UserProfile interface
+  const profile: UserProfile = {
+    id: data.id,
+    email: data.email || '',
+    name: data.name || data.first_name || '',
+    avatar_url: data.avatar_url,
+    plan: (data.plan as 'free' | 'ultimate') || 'free',
+    downloads_today: data.downloads_today || 0,
+    last_download_date: data.last_download_date,
+    favorites: data.favorites || [],
+    download_history: data.download_history || [],
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+  
+  return profile;
 }
 
 export async function createUserProfile(
@@ -89,7 +128,22 @@ export async function createUserProfile(
     return null;
   }
   
-  return data as UserProfile;
+  // Convert the response to match our UserProfile interface
+  const profile: UserProfile = {
+    id: data.id,
+    email: data.email || '',
+    name: data.name || '',
+    avatar_url: data.avatar_url,
+    plan: (data.plan as 'free' | 'ultimate') || 'free',
+    downloads_today: data.downloads_today || 0,
+    last_download_date: data.last_download_date,
+    favorites: data.favorites || [],
+    download_history: data.download_history || [],
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  };
+  
+  return profile;
 }
 
 export async function addFavoriteTemplate(

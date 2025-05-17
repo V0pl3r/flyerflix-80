@@ -1,11 +1,15 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
 import WelcomeModal from './WelcomeModal';
 import { useAuth } from '@/hooks/useAuth';
 
-const MemberLayout = () => {
+interface MemberLayoutProps {
+  children?: ReactNode;
+}
+
+const MemberLayout = ({ children }: MemberLayoutProps) => {
   const [showWelcome, setShowWelcome] = useState(false);
   const { user, loading } = useAuth();
   
@@ -52,7 +56,7 @@ const MemberLayout = () => {
     <div className="flex h-screen bg-flyerflix-black text-white">
       <MemberSidebar />
       <main className="flex-1 overflow-y-auto px-4 py-4 md:py-8">
-        <Outlet />
+        {children || <Outlet />}
         {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
       </main>
     </div>
