@@ -80,7 +80,7 @@ serve(async (req) => {
     }
 
     // Usar o ID do produto para buscar o preço associado
-    const productId = "prod_SHGYes8ihnURzd"; // ID do produto fornecido
+    const productId = "prod_SKEJde6PBj0Xia"; // ID do produto fornecido pelo usuário
     const prices = await stripe.prices.list({
       product: productId,
       active: true,
