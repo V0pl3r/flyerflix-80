@@ -1,5 +1,6 @@
+
 import { useState, useEffect } from 'react';
-import MemberPageWrapper from '../components/MemberPageWrapper';
+import MemberLayout from '../components/MemberLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -132,7 +133,7 @@ const Settings = () => {
   if (!user) return null;
 
   return (
-    <MemberPageWrapper>
+    <MemberLayout>
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Configurações da Conta</h1>
         
@@ -440,7 +441,7 @@ const Settings = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </MemberPageWrapper>
+    </MemberLayout>
   );
 };
 

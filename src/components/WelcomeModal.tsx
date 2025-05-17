@@ -6,10 +6,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface WelcomeModalProps {
   userName?: string;
-  onClose?: () => void; // Added onClose prop
 }
 
-const WelcomeModal = ({ userName, onClose }: WelcomeModalProps) => {
+const WelcomeModal = ({ userName }: WelcomeModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   
@@ -30,7 +29,6 @@ const WelcomeModal = ({ userName, onClose }: WelcomeModalProps) => {
   const handleClose = () => {
     setIsOpen(false);
     localStorage.setItem('flyerflix-welcome-modal-seen', 'true');
-    if (onClose) onClose(); // Call onClose if provided
   };
   
   const handleDontShowAgain = () => {
@@ -42,17 +40,12 @@ const WelcomeModal = ({ userName, onClose }: WelcomeModalProps) => {
       title: "Preferência salva",
       description: "Você não verá mais esta mensagem de boas-vindas.",
     });
-    
-    if (onClose) onClose(); // Call onClose if provided
   };
   
   const greeting = userName ? `Olá, ${userName}!` : 'Bem-vindo à Flyerflix!';
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      setIsOpen(open);
-      if (!open && onClose) onClose(); // Call onClose when dialog is closed
-    }}>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogContent className="bg-gradient-to-b from-[#1e1e1e] to-black border-white/10 text-white max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-flyerflix-red">
