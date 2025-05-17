@@ -1,118 +1,109 @@
 
-import { Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { Check } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import UpgradeButton from './UpgradeButton';
 
 const PricingSection = () => {
-  const [loadingFree, setLoadingFree] = useState(false);
-  const [loadingUltimate, setLoadingUltimate] = useState(false);
-
-  const handleFreeClick = () => {
-    setLoadingFree(true);
-    // Reset loading after a short delay to simulate a loading state
-    setTimeout(() => setLoadingFree(false), 400);
-  };
-
-  const handleUltimateClick = () => {
-    setLoadingUltimate(true);
-    // Reset loading after a short delay to simulate a loading state
-    setTimeout(() => setLoadingUltimate(false), 400);
-  };
-
-  const plans = [
-    {
-      id: 'free',
-      name: 'Grátis',
-      price: 'R$0',
-      description: 'Ideal para explorar a plataforma',
-      features: [
-        { text: '2 downloads por dia', included: true },
-        { text: 'Acesso a templates básicos', included: true },
-        { text: 'Marca d\'água nos downloads', included: true },
-        { text: 'Acesso a todas as categorias', included: false },
-        { text: 'Downloads ilimitados', included: false },
-        { text: 'Integração com Canva', included: false },
-      ],
-      buttonText: 'Começar agora',
-      handleClick: handleFreeClick,
-      loading: loadingFree,
-      featured: false
-    },
-    {
-      id: 'ultimate',
-      name: 'Ultimate',
-      price: 'R$23,90',
-      period: '/mês',
-      description: 'Acesso completo à plataforma',
-      features: [
-        { text: 'Downloads ilimitados', included: true },
-        { text: 'Acesso a todos os templates', included: true },
-        { text: 'Sem marca d\'água', included: true },
-        { text: 'Acesso antecipado às novidades', included: true },
-        { text: 'Templates exclusivos', included: true },
-        { text: 'Integração com Canva', included: true },
-      ],
-      buttonText: 'Assinar agora',
-      handleClick: handleUltimateClick,
-      loading: loadingUltimate,
-      featured: true
-    }
+  const { user } = useAuth();
+  
+  const freeBenefits = [
+    '2 downloads gratuitos por dia',
+    'Acesso aos templates básicos',
+    'Marca d\'água nos downloads',
+  ];
+  
+  const ultimateBenefits = [
+    'Downloads ilimitados',
+    'Acesso a todos os templates',
+    'Sem marca d\'água',
+    'Acesso antecipado a novos templates',
+    'Suporte prioritário',
   ];
 
   return (
-    <section className="py-20" id="pricing">
-      <div className="flyerflix-container">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Escolha seu plano</h2>
-          <p className="text-white/70 max-w-2xl mx-auto">
-            Selecione a opção que melhor atende às suas necessidades de criação
+    <section id="pricing" className="bg-flyerflix-black py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Planos Simples, Resultados Incríveis</h2>
+          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+            Escolha o plano que melhor atende às suas necessidades e transforme seus eventos com templates profissionais.
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {plans.map((plan) => (
-            <div 
-              key={plan.id} 
-              className={`bg-flyerflix-black rounded-xl border ${plan.featured ? 'border-flyerflix-red' : 'border-white/10'} p-8`}
-            >
-              {plan.featured && (
-                <div className="bg-flyerflix-red text-white text-xs font-bold uppercase tracking-wider py-1 px-3 rounded-full inline-block mb-4">
-                  Mais popular
-                </div>
-              )}
-              <h3 className="text-2xl font-bold mb-1">{plan.name}</h3>
-              <div className="flex items-end mb-4">
-                <span className="text-3xl font-bold">{plan.price}</span>
-                {plan.period && <span className="text-white/70 ml-1">{plan.period}</span>}
+        <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          {/* Free Plan */}
+          <div className="bg-gradient-to-b from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-xl transform transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+            <div className="p-8">
+              <h3 className="text-xl font-bold text-white mb-4">Plano Grátis</h3>
+              <div className="flex items-end mb-6">
+                <span className="text-4xl font-bold text-white">R$0</span>
+                <span className="text-gray-400 ml-2 mb-1">/para sempre</span>
               </div>
-              <p className="text-white/70 mb-6">{plan.description}</p>
+              <p className="text-gray-400 mb-6">Perfeito para quem está começando e quer experimentar nossas funcionalidades básicas.</p>
               
               <ul className="space-y-3 mb-8">
-                {plan.features.map((feature, index) => (
+                {freeBenefits.map((benefit, index) => (
                   <li key={index} className="flex items-center">
-                    {feature.included ? (
-                      <Check size={18} className="text-flyerflix-red mr-2 flex-shrink-0" />
-                    ) : (
-                      <X size={18} className="text-white/40 mr-2 flex-shrink-0" />
-                    )}
-                    <span className={feature.included ? "text-white" : "text-white/40"}>
-                      {feature.text}
-                    </span>
+                    <Check className="text-green-500 mr-2 shrink-0" size={18} />
+                    <span className="text-gray-300">{benefit}</span>
                   </li>
                 ))}
               </ul>
               
-              <Link to="/register" onClick={plan.handleClick}>
-                <Button 
-                  className={`${plan.featured ? "flyerflix-btn-primary" : "flyerflix-btn-secondary"} w-full hover:scale-105 transition-all duration-300`}
-                  disabled={plan.loading}
+              {user ? (
+                <button 
+                  className="w-full py-3 px-6 bg-white/10 text-white rounded-full font-medium hover:bg-white/20 transition-colors cursor-not-allowed"
+                  disabled
                 >
-                  {plan.loading ? "Carregando..." : plan.buttonText}
-                </Button>
-              </Link>
+                  Plano Atual
+                </button>
+              ) : (
+                <a href="/register" className="block w-full py-3 px-6 bg-white/10 text-white rounded-full font-medium text-center hover:bg-white/20 transition-colors">
+                  Começar Grátis
+                </a>
+              )}
             </div>
-          ))}
+          </div>
+          
+          {/* Ultimate Plan */}
+          <div className="bg-gradient-to-b from-flyerflix-red to-red-800 rounded-2xl overflow-hidden shadow-xl transform transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl relative">
+            {/* Popular Badge */}
+            <div className="absolute top-0 right-0 bg-yellow-400 text-black text-xs font-bold px-3 py-1 transform translate-x-[30%] translate-y-[50%] rotate-45">
+              POPULAR
+            </div>
+            
+            <div className="p-8">
+              <h3 className="text-xl font-bold text-white mb-4">Plano Ultimate</h3>
+              <div className="flex items-end mb-6">
+                <span className="text-4xl font-bold text-white">R$23,90</span>
+                <span className="text-white/70 ml-2 mb-1">/mês</span>
+              </div>
+              <p className="text-white/80 mb-6">Acesso completo a todos os recursos e templates premium para criadores exigentes.</p>
+              
+              <ul className="space-y-3 mb-8">
+                {ultimateBenefits.map((benefit, index) => (
+                  <li key={index} className="flex items-center">
+                    <Check className="text-yellow-300 mr-2 shrink-0" size={18} />
+                    <span className="text-white">{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+              
+              {user && user.plan === 'ultimate' ? (
+                <button 
+                  className="w-full py-3 px-6 bg-black/20 text-white rounded-full font-medium hover:bg-black/30 transition-colors cursor-not-allowed group"
+                  disabled
+                >
+                  <span className="flex items-center justify-center">
+                    <Check className="mr-2" size={18} />
+                    Assinatura Ativa
+                  </span>
+                </button>
+              ) : (
+                <UpgradeButton variant="secondary" size="lg" className="w-full" />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </section>

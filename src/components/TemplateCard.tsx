@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Template } from '../data/templates';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { getSafeImageUrl, handleImageError } from '@/utils/imageUtils';
 
 interface TemplateCardProps {
   template: Template;
@@ -27,6 +28,7 @@ const TemplateCard = ({
   onPreview
 }: TemplateCardProps) => {
   const [isHovering, setIsHovering] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const isDesktop = window.innerWidth >= 1024; // Simple check for desktop
   
@@ -56,6 +58,13 @@ const TemplateCard = ({
     }
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  // Get a safe image URL with fallback
+  const safeImageUrl = getSafeImageUrl(template.imageUrl);
+
   return (
     <div 
       ref={cardRef}
@@ -68,11 +77,22 @@ const TemplateCard = ({
       onMouseLeave={() => isDesktop && setIsHovering(false)}
     >
       <div className="relative w-full aspect-[9/16]">
+        {/* Template image with loading state */}
+        <div className={cn(
+          "absolute inset-0 bg-gray-800/50 transition-opacity duration-300",
+          imageLoaded ? "opacity-0" : "opacity-100"
+        )} />
+
         <img 
-          src={template.imageUrl} 
+          src={safeImageUrl}
           alt={template.title}
-          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
+          className={cn(
+            "w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]",
+            !imageLoaded && "opacity-0"
+          )}
           loading="lazy"
+          onLoad={handleImageLoad}
+          onError={handleImageError}
         />
         
         {/* Watermark overlay - only shown in preview */}

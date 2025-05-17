@@ -9,17 +9,22 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { getUserProfile, createUserProfile, updateUserProfile, UserProfile } from '@/models/UserProfile';
 
 type UserType = {
+  id: string;
   name: string;
   email: string;
   plan: string;
   downloads: number;
   maxDownloads: number | "unlimited";
+  favorites: string[];
+  avatarUrl?: string;
 };
 
 interface AuthContextType {
   user: UserType | null;
+  profile: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -27,33 +32,108 @@ interface AuthContextType {
   updateUser: (data: Partial<UserType>) => void;
   checkSubscription: () => Promise<void>;
   createCheckoutSession: () => Promise<string | null>;
+  updateUserAvatar: (avatarUrl: string) => Promise<void>;
+  addFavorite: (templateId: string) => Promise<void>;
+  removeFavorite: (templateId: string) => Promise<void>;
+  recordDownload: (templateId: string, templateName: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserType | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Load user from localStorage on component mount
-  useEffect(() => {
-    const storedUser = localStorage.getItem('flyerflix-user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error);
-        localStorage.removeItem('flyerflix-user');
+  // Load user profile from Supabase and update state
+  const loadUserProfile = async (userId: string, email: string) => {
+    setLoading(true);
+    try {
+      // Try to get existing profile
+      let userProfile = await getUserProfile(userId);
+      
+      // If no profile exists, create one
+      if (!userProfile) {
+        userProfile = await createUserProfile(userId, email);
       }
+      
+      if (userProfile) {
+        setProfile(userProfile);
+        
+        // Map profile data to user state object
+        setUser({
+          id: userId,
+          name: userProfile.name || 'Usuário Flyerflix',
+          email: email,
+          plan: userProfile.plan,
+          downloads: userProfile.downloads_today,
+          maxDownloads: userProfile.plan === 'ultimate' ? "unlimited" : 2,
+          favorites: userProfile.favorites || [],
+          avatarUrl: userProfile.avatar_url
+        });
+      }
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+  
+  // Check authentication status when component mounts
+  useEffect(() => {
+    const checkAuth = async () => {
+      setLoading(true);
+      
+      try {
+        // Get current session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          // Load user profile data
+          await loadUserProfile(session.user.id, session.user.email || '');
+          
+          // Check subscription status
+          await checkSubscription();
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error("Authentication check failed:", error);
+        setUser(null);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session?.user) {
+          await loadUserProfile(session.user.id, session.user.email || '');
+          await checkSubscription();
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
+      }
+    );
+    
+    // Initial check
+    checkAuth();
+    
+    // Cleanup
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
   
   // Check subscription status from Stripe
   const checkSubscription = async () => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     
     try {
       setLoading(true);
@@ -70,6 +150,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           plan: data.plan,
           maxDownloads: data.maxDownloads,
         });
+        
+        // Also update the profile in Supabase if plan changed
+        if (profile && profile.plan !== data.plan) {
+          const updatedProfile = await updateUserProfile(user.id, {
+            plan: data.plan === 'ultimate' ? 'ultimate' : 'free'
+          });
+          
+          if (updatedProfile) {
+            setProfile(updatedProfile);
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to check subscription:', error);
@@ -78,7 +169,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Create a checkout session for subscription
+  // Create a checkout session for subscription with specific price
   const createCheckoutSession = async (): Promise<string | null> => {
     if (!user) {
       toast({
@@ -120,28 +211,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
-      // This is a mock login - would be replaced with Supabase auth
-      // Simulate successful login
-      const mockUser: UserType = { 
-        name: 'Usuário Teste', 
-        email: email, 
-        plan: 'free',
-        downloads: 0,
-        maxDownloads: 2
-      };
-      
-      localStorage.setItem('flyerflix-user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta à Flyerflix.",
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
-      navigate('/dashboard');
+      if (error) throw error;
       
-      // Check if user has an active subscription
-      await checkSubscription();
+      if (data.user) {
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo de volta à Flyerflix.",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",
@@ -156,10 +240,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      localStorage.removeItem('flyerflix-user');
-      localStorage.removeItem('flyerflix-welcome-seen');
-      localStorage.removeItem('flyerflix-visited-dashboard');
+      await supabase.auth.signOut();
       setUser(null);
+      setProfile(null);
       navigate('/login');
     } catch (error: any) {
       toast({
@@ -176,24 +259,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
-      // This is a mock registration - would be replaced with actual authentication
-      const mockUser: UserType = { 
-        name: name, 
-        email: email, 
-        plan: 'free',
-        downloads: 0,
-        maxDownloads: 2
-      };
-      
-      localStorage.setItem('flyerflix-user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: "Registro realizado com sucesso!",
-        description: "Bem-vindo à Flyerflix.",
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name
+          }
+        }
       });
       
-      navigate('/dashboard');
+      if (error) throw error;
+      
+      // Create profile for the new user
+      if (data.user) {
+        await createUserProfile(data.user.id, email, name);
+        
+        toast({
+          title: "Registro realizado com sucesso!",
+          description: "Bem-vindo à Flyerflix.",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao registrar",
@@ -208,8 +296,152 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const updateUser = (data: Partial<UserType>) => {
     if (user) {
       const updatedUser = { ...user, ...data };
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
       setUser(updatedUser);
+    }
+  };
+  
+  // Update user avatar URL
+  const updateUserAvatar = async (avatarUrl: string) => {
+    if (!user?.id) return;
+    
+    try {
+      setLoading(true);
+      
+      // Update profile in Supabase
+      const updatedProfile = await updateUserProfile(user.id, {
+        avatar_url: avatarUrl
+      });
+      
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        updateUser({ avatarUrl });
+        
+        toast({
+          title: "Imagem atualizada",
+          description: "Seu avatar foi atualizado com sucesso."
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar avatar",
+        description: "Não foi possível salvar sua imagem.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Add template to favorites
+  const addFavorite = async (templateId: string) => {
+    if (!user?.id || !profile) return;
+    
+    // Optimistic update
+    setUser({
+      ...user,
+      favorites: [...user.favorites, templateId]
+    });
+    
+    try {
+      // Update profile in Supabase
+      const updatedFavorites = [...(profile.favorites || []), templateId];
+      const updatedProfile = await updateUserProfile(user.id, {
+        favorites: updatedFavorites
+      });
+      
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+      }
+    } catch (error) {
+      // Revert optimistic update on failure
+      setUser({
+        ...user,
+        favorites: user.favorites.filter(id => id !== templateId)
+      });
+      
+      console.error("Error adding favorite:", error);
+    }
+  };
+  
+  // Remove template from favorites
+  const removeFavorite = async (templateId: string) => {
+    if (!user?.id || !profile) return;
+    
+    // Optimistic update
+    setUser({
+      ...user,
+      favorites: user.favorites.filter(id => id !== templateId)
+    });
+    
+    try {
+      // Update profile in Supabase
+      const updatedFavorites = (profile.favorites || []).filter(id => id !== templateId);
+      const updatedProfile = await updateUserProfile(user.id, {
+        favorites: updatedFavorites
+      });
+      
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+      }
+    } catch (error) {
+      // Revert optimistic update on failure
+      setUser({
+        ...user,
+        favorites: [...user.favorites, templateId]
+      });
+      
+      console.error("Error removing favorite:", error);
+    }
+  };
+  
+  // Record template download
+  const recordDownload = async (templateId: string, templateName: string): Promise<boolean> => {
+    if (!user?.id || !profile) return false;
+    
+    try {
+      // Update user state optimistically
+      const newDownloadsCount = user.downloads + 1;
+      updateUser({
+        downloads: newDownloadsCount
+      });
+      
+      // Record download in Supabase
+      const currentDate = new Date().toISOString();
+      const newDownload = {
+        template_id: templateId,
+        template_name: templateName,
+        downloaded_at: currentDate
+      };
+      
+      const today = currentDate.split('T')[0]; // YYYY-MM-DD
+      const lastDownloadDate = profile.last_download_date?.split('T')[0];
+      
+      // Reset daily counter if it's a new day
+      let downloadsToday = profile.downloads_today || 0;
+      if (lastDownloadDate !== today) {
+        downloadsToday = 0;
+      }
+      
+      // Update profile in Supabase
+      const updatedProfile = await updateUserProfile(user.id, {
+        downloads_today: downloadsToday + 1,
+        last_download_date: currentDate,
+        download_history: [...(profile.download_history || []), newDownload]
+      });
+      
+      if (updatedProfile) {
+        setProfile(updatedProfile);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error recording download:", error);
+      // Revert optimistic update
+      updateUser({
+        downloads: Math.max(0, user.downloads - 1)
+      });
+      return false;
     }
   };
 
@@ -217,13 +449,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider 
       value={{ 
         user, 
+        profile,
         loading, 
         login, 
         logout, 
         register, 
         updateUser,
         checkSubscription,
-        createCheckoutSession
+        createCheckoutSession,
+        updateUserAvatar,
+        addFavorite,
+        removeFavorite,
+        recordDownload
       }}
     >
       {children}

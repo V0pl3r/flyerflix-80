@@ -2,16 +2,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { logStep } from "../_shared/utils.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Helper logging function for improved debugging
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -21,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    logStep("create-checkout", "Function started");
     
     // Create Supabase client using the anon key for user authentication
     const supabaseClient = createClient(
@@ -39,7 +34,7 @@ serve(async (req) => {
       throw new Error("User not authenticated or email not available");
     }
     
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    logStep("create-checkout", "User authenticated", { userId: user.id, email: user.email });
 
     // Initialize Stripe with the secret key
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -52,7 +47,7 @@ serve(async (req) => {
     
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
-      logStep("Found existing Stripe customer", { customerId });
+      logStep("create-checkout", "Found existing Stripe customer", { customerId });
     } else {
       // Create a new customer if none exists
       const newCustomer = await stripe.customers.create({
@@ -62,24 +57,16 @@ serve(async (req) => {
         },
       });
       customerId = newCustomer.id;
-      logStep("Created new Stripe customer", { customerId });
+      logStep("create-checkout", "Created new Stripe customer", { customerId });
     }
 
-    // Create a subscription checkout session
+    // Create a subscription checkout session with the specific price ID
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [
         {
-          price_data: {
-            currency: "brl",
-            product_data: { 
-              name: "Plano Ultimate Flyerflix",
-              description: "Acesso ilimitado a todos os templates e recursos premium",
-            },
-            unit_amount: 2390, // R$23,90 in centavos
-            recurring: { interval: "month" },
-          },
+          price: "price_1RMi1LLRBFllmSxQB8o9bv6H", // Use the specific price ID provided
           quantity: 1,
         },
       ],
@@ -89,7 +76,7 @@ serve(async (req) => {
       locale: "pt-BR",
     });
 
-    logStep("Created checkout session", { sessionId: session.id, url: session.url });
+    logStep("create-checkout", "Created checkout session", { sessionId: session.id, url: session.url });
 
     return new Response(
       JSON.stringify({ url: session.url }),
