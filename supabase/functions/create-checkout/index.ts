@@ -79,21 +79,28 @@ serve(async (req) => {
       logStep("Created new Stripe customer", { customerId });
     }
 
+    // Usar o ID do produto para buscar o preço associado
+    const productId = "prod_SHGYes8ihnURzd"; // ID do produto fornecido
+    const prices = await stripe.prices.list({
+      product: productId,
+      active: true,
+      limit: 1
+    });
+
+    if (prices.data.length === 0) {
+      throw new Error("No active price found for this product");
+    }
+
+    const priceId = prices.data[0].id;
+    logStep("Found price for product", { productId, priceId });
+
     // Create a subscription checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [
         {
-          price_data: {
-            currency: "brl",
-            product_data: { 
-              name: "Plano Ultimate Flyerflix",
-              description: "Acesso ilimitado a todos os templates e recursos premium",
-            },
-            unit_amount: 2390, // R$23,90 em centavos
-            recurring: { interval: "month" },
-          },
+          price: priceId, // Usar o ID do preço obtido
           quantity: 1,
         },
       ],
