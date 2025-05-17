@@ -1,103 +1,70 @@
 
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import Stripe from "https://esm.sh/stripe@14.21.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
-
-// Helper logging function for debugging
-const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
   }
-
+  
   try {
-    // Use Supabase client with anon key for authentication
+    // Create a Supabase client with the auth context of the logged in user
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+      }
     );
+    
+    // Get the user from the auth context
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
 
-    // Authenticate the user
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
-    
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
-    const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
-    
-    logStep("User authenticated", { userId: user.id, email: user.email });
-
-    // Initialize Stripe
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-      apiVersion: "2023-10-16",
-    });
-    
-    // Try to find a Stripe customer for this user
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
-    if (customers.data.length === 0) {
-      logStep("No Stripe customer found for user");
+    if (!user) {
       return new Response(
-        JSON.stringify({ 
-          subscribed: false, 
-          plan: "free",
-          maxDownloads: 2,
-          downloads: 0,
-        }),
-        { 
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
-        }
+        JSON.stringify({ error: 'Não autorizado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
       );
     }
-
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
-
-    // Check for active subscriptions for this customer
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
     
-    const hasActiveSub = subscriptions.data.length > 0;
-    logStep(hasActiveSub ? "Active subscription found" : "No active subscription found");
+    // Get the user's profile to check the current plan
+    const { data: profile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single();
+      
+    if (profileError || !profile) {
+      return new Response(
+        JSON.stringify({ error: 'Perfil de usuário não encontrado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 404 }
+      );
+    }
     
-    // Return the user's subscription status
+    // Return the plan details
+    const planDetails = {
+      plan: profile.plan,
+      maxDownloads: profile.plan === 'ultimate' ? 'unlimited' : 2
+    };
+
     return new Response(
-      JSON.stringify({ 
-        subscribed: hasActiveSub, 
-        plan: hasActiveSub ? "ultimate" : "free",
-        maxDownloads: hasActiveSub ? "unlimited" : 2,
-        downloads: 0,
-      }),
-      { 
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      }
+      JSON.stringify(planDetails),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {
-    console.error("Error in check-subscription function:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
     );
   }
 });
