@@ -89,35 +89,18 @@ serve(async (req) => {
         // Save the subscription details for the user
         if (isActive) {
           // Update the user profile to have Ultimate plan
-          const { error } = await supabaseAdmin.rpc("update_user_plan", {
-            user_email: email,
-            plan_name: "ultimate"
-          });
+          const { error } = await supabaseAdmin
+            .from("profiles")
+            .update({ 
+              plan: "ultimate" 
+            })
+            .eq("id", userData.id);
           
           if (error) {
             throw new Error(`Failed to update user plan: ${error.message}`);
           }
           
           console.log(`Updated plan to Ultimate for user email: ${email}`);
-          
-          // Store the subscription details
-          await supabaseAdmin
-            .from("subscriptions")
-            .upsert(
-              {
-                user_id: userData.id,
-                stripe_customer_id: customerId,
-                stripe_subscription_id: subscription.id,
-                status: subscription.status,
-                plan: "ultimate",
-                current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-                cancel_at_period_end: subscription.cancel_at_period_end,
-                updated_at: new Date().toISOString(),
-              },
-              { onConflict: "user_id" }
-            );
-            
-          console.log(`Subscription data saved for user: ${email}`);
         }
         break;
       }
@@ -138,11 +121,24 @@ serve(async (req) => {
           throw new Error(`No email found for customer: ${customerId}`);
         }
         
-        // Update the user plan to free
-        const { error } = await supabaseAdmin.rpc("update_user_plan", {
-          user_email: email,
-          plan_name: "free"
-        });
+        // Update the user profile to free plan
+        const { data: userData, error: userError } = await supabaseAdmin
+          .from("profiles")
+          .select("id")
+          .eq("email", email)
+          .single();
+          
+        if (userError || !userData) {
+          console.error(`User not found for email: ${email}`);
+          throw new Error(`User not found for email: ${email}`);
+        }
+
+        const { error } = await supabaseAdmin
+          .from("profiles")
+          .update({
+            plan: "free"
+          })
+          .eq("id", userData.id);
         
         if (error) {
           throw new Error(`Failed to update user plan: ${error.message}`);

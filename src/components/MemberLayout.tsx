@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/components/ui/sonner';
+import WelcomeModal from './WelcomeModal';
 
 interface MemberLayoutProps {
   children: ReactNode;
@@ -113,6 +114,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     <div className="min-h-screen bg-flyerflix-black text-white overflow-hidden">
       {/* Sidebar - Desktop */}
       {!isMobile && <MemberSidebar />}
+      
+      {/* Welcome Modal */}
+      {showWelcomeMessage && user && <WelcomeModal userName={user.name || undefined} />}
       
       {/* Main Content */}
       <div 

@@ -40,6 +40,21 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Atualizar o perfil do usuário com o email, caso ainda não esteja preenchido
+    const { data: profileData } = await supabaseClient
+      .from('profiles')
+      .select('email, name')
+      .eq('id', user.id)
+      .single();
+
+    if (!profileData?.email) {
+      await supabaseClient
+        .from('profiles')
+        .update({ email: user.email })
+        .eq('id', user.id);
+      logStep("Updated user profile with email", { email: user.email });
+    }
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -50,12 +65,19 @@ serve(async (req) => {
     
     if (customers.data.length === 0) {
       logStep("No Stripe customer found for user");
+      
+      // Atualizar o perfil do usuário com plano free
+      await supabaseClient
+        .from('profiles')
+        .update({ plan: 'free' })
+        .eq('id', user.id);
+      
       return new Response(
         JSON.stringify({ 
           subscribed: false, 
           plan: "free",
           maxDownloads: 2,
-          downloads: 0,
+          downloads: profileData?.downloads_today || 0,
         }),
         { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -77,13 +99,21 @@ serve(async (req) => {
     const hasActiveSub = subscriptions.data.length > 0;
     logStep(hasActiveSub ? "Active subscription found" : "No active subscription found");
     
+    // Atualizar o perfil do usuário com o plano atual
+    await supabaseClient
+      .from('profiles')
+      .update({ 
+        plan: hasActiveSub ? 'ultimate' : 'free' 
+      })
+      .eq('id', user.id);
+    
     // Return the user's subscription status
     return new Response(
       JSON.stringify({ 
         subscribed: hasActiveSub, 
         plan: hasActiveSub ? "ultimate" : "free",
         maxDownloads: hasActiveSub ? "unlimited" : 2,
-        downloads: 0,
+        downloads: profileData?.downloads_today || 0,
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -41,6 +41,19 @@ serve(async (req) => {
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Buscar os dados do perfil, incluindo o nome
+    const { data: profileData } = await supabaseClient
+      .from('profiles')
+      .select('name, first_name, last_name')
+      .eq('id', user.id)
+      .single();
+
+    // Determinar o nome a ser usado para o cliente Stripe
+    let customerName = profileData?.name;
+    if (!customerName && (profileData?.first_name || profileData?.last_name)) {
+      customerName = `${profileData?.first_name || ''} ${profileData?.last_name || ''}`.trim();
+    }
+
     // Initialize Stripe with the secret key
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
@@ -57,6 +70,7 @@ serve(async (req) => {
       // Create a new customer if none exists
       const newCustomer = await stripe.customers.create({
         email: user.email,
+        name: customerName || undefined,
         metadata: {
           user_id: user.id,
         },
@@ -77,7 +91,7 @@ serve(async (req) => {
               name: "Plano Ultimate Flyerflix",
               description: "Acesso ilimitado a todos os templates e recursos premium",
             },
-            unit_amount: 2390, // R$23,90 in centavos
+            unit_amount: 2390, // R$23,90 em centavos
             recurring: { interval: "month" },
           },
           quantity: 1,

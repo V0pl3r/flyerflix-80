@@ -9,33 +9,87 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      payments: {
         Row: {
           created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          download_history: Json | null
+          downloads_today: number | null
+          email: string | null
+          favorites: string[] | null
           first_name: string | null
           id: string
           is_hidden: boolean
+          last_download_date: string | null
           last_name: string | null
+          name: string | null
+          plan: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
+          download_history?: Json | null
+          downloads_today?: number | null
+          email?: string | null
+          favorites?: string[] | null
           first_name?: string | null
           id: string
           is_hidden?: boolean
+          last_download_date?: string | null
           last_name?: string | null
+          name?: string | null
+          plan?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
+          download_history?: Json | null
+          downloads_today?: number | null
+          email?: string | null
+          favorites?: string[] | null
           first_name?: string | null
           id?: string
           is_hidden?: boolean
+          last_download_date?: string | null
           last_name?: string | null
+          name?: string | null
+          plan?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+        }
+        Update: {
+          created_at?: string
+          id?: number
         }
         Relationships: []
       }
