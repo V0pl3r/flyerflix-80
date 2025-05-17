@@ -147,6 +147,21 @@ serve(async (req) => {
         console.log(`Subscription cancelled for user email: ${email}`);
         break;
       }
+      
+      // Adicionar handlers para os novos eventos
+      case "payment_intent.succeeded": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log(`Payment intent succeeded: ${paymentIntent.id} for amount ${paymentIntent.amount}`);
+        // Aqui você pode adicionar lógica adicional se necessário
+        break;
+      }
+      
+      case "payment_intent.payment_failed": {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        console.log(`Payment intent failed: ${paymentIntent.id}, reason: ${paymentIntent.last_payment_error?.message || 'unknown'}`);
+        // Aqui você pode adicionar lógica para notificar o usuário sobre o pagamento com falha
+        break;
+      }
     }
     
     // Return a success response
