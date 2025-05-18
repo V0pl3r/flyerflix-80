@@ -9,13 +9,16 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchUserProfile } from '@/models/UserProfile';
 
 type UserType = {
+  id: string;
   name: string;
   email: string;
   plan: string;
   downloads: number;
   maxDownloads: number | "unlimited";
+  avatarUrl?: string;
 };
 
 interface AuthContextType {
@@ -37,23 +40,102 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  // Load user from localStorage on component mount
+  // Load user from localStorage and Supabase on auth change
   useEffect(() => {
-    const storedUser = localStorage.getItem('flyerflix-user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error('Failed to parse stored user data:', error);
-        localStorage.removeItem('flyerflix-user');
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session && session.user) {
+          // Use setTimeout to defer the Supabase profile fetch to prevent auth deadlock
+          setTimeout(async () => {
+            await loadUserProfile(session.user.id);
+          }, 0);
+        } else {
+          setUser(null);
+        }
       }
-    }
-    setLoading(false);
+    );
+
+    // Check for existing session
+    const loadInitialSession = async () => {
+      try {
+        setLoading(true);
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          await loadUserProfile(session.user.id);
+        }
+      } catch (error) {
+        console.error('Error loading initial session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadInitialSession();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+  
+  // Load user profile data from Supabase
+  const loadUserProfile = async (userId: string) => {
+    try {
+      // Try to fetch from Supabase first
+      const profile = await fetchUserProfile(userId);
+      
+      if (profile) {
+        // Convert profile data to UserType
+        const userData: UserType = {
+          id: profile.id,
+          name: profile.name || '',
+          email: profile.email || '',
+          plan: profile.plan || 'free',
+          downloads: profile.downloads_today || 0,
+          maxDownloads: profile.plan === 'ultimate' ? 'unlimited' : 2,
+          avatarUrl: profile.avatar_url || '',
+        };
+        
+        setUser(userData);
+        localStorage.setItem('flyerflix-user', JSON.stringify(userData));
+      } else {
+        // Fallback to localStorage if Supabase fetch fails
+        const storedUser = localStorage.getItem('flyerflix-user');
+        if (storedUser) {
+          try {
+            const parsedUser = JSON.parse(storedUser);
+            // Ensure ID is set
+            parsedUser.id = userId;
+            setUser(parsedUser);
+          } catch (error) {
+            console.error('Failed to parse stored user data:', error);
+            localStorage.removeItem('flyerflix-user');
+          }
+        } else {
+          // Create a default user object if none exists
+          const defaultUser: UserType = {
+            id: userId,
+            name: '',
+            email: '',
+            plan: 'free',
+            downloads: 0,
+            maxDownloads: 2
+          };
+          setUser(defaultUser);
+          localStorage.setItem('flyerflix-user', JSON.stringify(defaultUser));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Check subscription status from Stripe
   const checkSubscription = async () => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     
     try {
       setLoading(true);
@@ -120,28 +202,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
-      // This is a mock login - would be replaced with Supabase auth
-      // Simulate successful login
-      const mockUser: UserType = { 
-        name: 'Usuário Teste', 
-        email: email, 
-        plan: 'free',
-        downloads: 0,
-        maxDownloads: 2
-      };
-      
-      localStorage.setItem('flyerflix-user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta à Flyerflix.",
+      // Authenticate with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
       });
       
-      navigate('/dashboard');
+      if (error) {
+        throw error;
+      }
       
-      // Check if user has an active subscription
-      await checkSubscription();
+      if (data.user) {
+        // User profile will be loaded by the auth state change listener
+        toast({
+          title: "Login realizado com sucesso!",
+          description: "Bem-vindo de volta à Flyerflix.",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao fazer login",
@@ -156,7 +235,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      localStorage.removeItem('flyerflix-user');
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        throw error;
+      }
+      
       localStorage.removeItem('flyerflix-welcome-seen');
       localStorage.removeItem('flyerflix-visited-dashboard');
       setUser(null);
@@ -176,24 +262,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       
-      // This is a mock registration - would be replaced with actual authentication
-      const mockUser: UserType = { 
-        name: name, 
-        email: email, 
-        plan: 'free',
-        downloads: 0,
-        maxDownloads: 2
-      };
-      
-      localStorage.setItem('flyerflix-user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      
-      toast({
-        title: "Registro realizado com sucesso!",
-        description: "Bem-vindo à Flyerflix.",
+      // Register with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name
+          }
+        }
       });
       
-      navigate('/dashboard');
+      if (error) {
+        throw error;
+      }
+      
+      if (data.user) {
+        // User profile will be loaded by the auth state change listener
+        toast({
+          title: "Registro realizado com sucesso!",
+          description: "Bem-vindo à Flyerflix.",
+        });
+        
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       toast({
         title: "Erro ao registrar",

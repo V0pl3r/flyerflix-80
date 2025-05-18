@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 
@@ -18,97 +17,191 @@ export interface UserProfile {
   download_history: any[] | null;
   created_at: string;
   updated_at: string;
+  user_id: string | null; // New field added by our migration
 }
 
 export async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-  if (error || !data) {
-    console.error('Error fetching user profile:', error);
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    // Converter os dados brutos para o tipo UserProfile
+    const userProfile: UserProfile = {
+      id: data.id,
+      email: data.email,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      name: data.name,
+      avatar_url: data.avatar_url,
+      plan: data.plan as 'free' | 'ultimate' | null,
+      role: data.role,
+      is_hidden: data.is_hidden,
+      downloads_today: data.downloads_today,
+      last_download_date: data.last_download_date,
+      // Converter Json para string[] se não for null
+      favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
+      // Converter Json para any[] se não for null
+      download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      user_id: data.user_id
+    };
+
+    return userProfile;
+  } catch (error) {
+    console.error('Unexpected error fetching user profile:', error);
     return null;
   }
-
-  // Converter os dados brutos para o tipo UserProfile
-  const userProfile: UserProfile = {
-    id: data.id,
-    email: data.email,
-    first_name: data.first_name,
-    last_name: data.last_name,
-    name: data.name,
-    avatar_url: data.avatar_url,
-    plan: data.plan as 'free' | 'ultimate' | null,
-    role: data.role,
-    is_hidden: data.is_hidden,
-    downloads_today: data.downloads_today,
-    last_download_date: data.last_download_date,
-    // Converter Json para string[] se não for null
-    favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
-    // Converter Json para any[] se não for null
-    download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
-    created_at: data.created_at,
-    updated_at: data.updated_at
-  };
-
-  return userProfile;
 }
 
 export async function updateUserProfile(profile: Partial<UserProfile>): Promise<UserProfile | null> {
-  // Garante que temos um ID para atualizar
-  if (!profile.id) {
-    console.error('Cannot update profile without an ID');
+  try {
+    // Garante que temos um ID para atualizar
+    if (!profile.id) {
+      console.error('Cannot update profile without an ID');
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({
+        first_name: profile.first_name,
+        last_name: profile.last_name,
+        name: profile.name,
+        email: profile.email,
+        avatar_url: profile.avatar_url,
+        plan: profile.plan,
+        downloads_today: profile.downloads_today,
+        last_download_date: profile.last_download_date,
+        favorites: profile.favorites,
+        download_history: profile.download_history,
+        updated_at: new Date().toISOString(),
+        user_id: profile.user_id || profile.id // Ensure user_id is set to link with auth.users
+      })
+      .eq('id', profile.id)
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error updating user profile:', error);
+      
+      // If profile doesn't exist yet, create it
+      if (error.code === 'PGRST116') {
+        return createUserProfile(profile);
+      }
+      
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    // Converter os dados atualizados para o tipo UserProfile
+    const updatedProfile: UserProfile = {
+      id: data.id,
+      email: data.email,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      name: data.name,
+      avatar_url: data.avatar_url,
+      plan: data.plan as 'free' | 'ultimate' | null,
+      role: data.role,
+      is_hidden: data.is_hidden,
+      downloads_today: data.downloads_today,
+      last_download_date: data.last_download_date,
+      // Converter Json para string[] se não for null
+      favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
+      // Converter Json para any[] se não for null
+      download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      user_id: data.user_id
+    };
+
+    return updatedProfile;
+  } catch (error) {
+    console.error('Unexpected error updating user profile:', error);
     return null;
   }
+}
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({
-      first_name: profile.first_name,
-      last_name: profile.last_name,
-      name: profile.name,
-      email: profile.email,
-      avatar_url: profile.avatar_url,
-      plan: profile.plan,
-      downloads_today: profile.downloads_today,
-      last_download_date: profile.last_download_date,
-      favorites: profile.favorites,
-      download_history: profile.download_history,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', profile.id)
-    .select('*')
-    .single();
+// New function to create a user profile if it doesn't exist
+async function createUserProfile(profile: Partial<UserProfile>): Promise<UserProfile | null> {
+  try {
+    // Ensure we have an ID
+    if (!profile.id) {
+      console.error('Cannot create profile without an ID');
+      return null;
+    }
 
-  if (error || !data) {
-    console.error('Error updating user profile:', error);
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        id: profile.id,
+        first_name: profile.first_name || null,
+        last_name: profile.last_name || null,
+        name: profile.name || null,
+        email: profile.email || null,
+        avatar_url: profile.avatar_url || null,
+        plan: profile.plan || 'free',
+        role: profile.role || 'user',
+        is_hidden: profile.is_hidden !== undefined ? profile.is_hidden : false,
+        downloads_today: profile.downloads_today || 0,
+        last_download_date: profile.last_download_date || null,
+        favorites: profile.favorites || [],
+        download_history: profile.download_history || [],
+        user_id: profile.user_id || profile.id
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      console.error('Error creating user profile:', error);
+      return null;
+    }
+
+    if (!data) {
+      return null;
+    }
+
+    // Convert to UserProfile type
+    const newProfile: UserProfile = {
+      id: data.id,
+      email: data.email,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      name: data.name,
+      avatar_url: data.avatar_url,
+      plan: data.plan as 'free' | 'ultimate' | null,
+      role: data.role,
+      is_hidden: data.is_hidden,
+      downloads_today: data.downloads_today,
+      last_download_date: data.last_download_date,
+      favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
+      download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      user_id: data.user_id
+    };
+
+    return newProfile;
+  } catch (error) {
+    console.error('Unexpected error creating user profile:', error);
     return null;
   }
-
-  // Converter os dados atualizados para o tipo UserProfile
-  const updatedProfile: UserProfile = {
-    id: data.id,
-    email: data.email,
-    first_name: data.first_name,
-    last_name: data.last_name,
-    name: data.name,
-    avatar_url: data.avatar_url,
-    plan: data.plan as 'free' | 'ultimate' | null,
-    role: data.role,
-    is_hidden: data.is_hidden,
-    downloads_today: data.downloads_today,
-    last_download_date: data.last_download_date,
-    // Converter Json para string[] se não for null
-    favorites: Array.isArray(data.favorites) ? data.favorites : (data.favorites ? [] : null),
-    // Converter Json para any[] se não for null
-    download_history: Array.isArray(data.download_history) ? data.download_history : (data.download_history ? [] : null),
-    created_at: data.created_at,
-    updated_at: data.updated_at
-  };
-
-  return updatedProfile;
 }
 
 export async function addToFavorites(userId: string, templateId: string): Promise<boolean> {

@@ -7,8 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { User, BadgeCheck, Upload } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { updateUserProfile } from '@/models/UserProfile';
 
 type UserType = {
+  id: string;
   name: string;
   email: string;
   plan: string;
@@ -23,32 +27,64 @@ interface ProfileModalProps {
 }
 
 const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
-  const [user, setUser] = useState<UserType | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [name, setName] = useState<string>('');
   const { toast } = useToast();
+  const { user, updateUser } = useAuth();
   
   useEffect(() => {
-    const userData = localStorage.getItem('flyerflix-user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setAvatarPreview(parsedUser.avatarUrl || '');
-      setName(parsedUser.name || '');
+    if (user && open) {
+      setAvatarPreview(user.avatarUrl || '');
+      setName(user.name || '');
     }
-  }, [open]);
+  }, [user, open]);
   
-  const handleSaveProfile = () => {
-    if (user) {
+  const handleSaveProfile = async () => {
+    if (!user) return;
+    
+    try {
+      // First upload avatar if there's a new one
+      let avatarUrl = avatarPreview;
+      
+      // Only upload if there's a new file
+      if (avatarFile) {
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const filePath = `avatars/${fileName}`;
+        
+        // Upload to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, avatarFile);
+          
+        if (uploadError) {
+          throw uploadError;
+        }
+        
+        // Get the public URL
+        const { data } = supabase.storage
+          .from('avatars')
+          .getPublicUrl(filePath);
+          
+        avatarUrl = data.publicUrl;
+      }
+      
+      // Update profile in Supabase
+      await updateUserProfile({
+        id: user.id,
+        name,
+        avatar_url: avatarUrl
+      });
+      
+      // Update local user state
       const updatedUser = { 
         ...user, 
         name: name,
-        avatarUrl: avatarPreview
+        avatarUrl: avatarUrl
       };
       
-      setUser(updatedUser);
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+      updateUser(updatedUser);
       
       toast({
         title: "Perfil atualizado",
@@ -56,6 +92,13 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
       });
       
       onOpenChange(false);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Erro ao atualizar perfil",
+        description: "Ocorreu um erro ao salvar suas informações.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -114,7 +157,7 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
               <Avatar className="h-24 w-24 border-2 border-flyerflix-red">
                 <AvatarImage src={avatarPreview} alt={user.name} className="object-cover" />
                 <AvatarFallback className="bg-flyerflix-black text-flyerflix-red text-lg">
-                  {user.name.substring(0, 2).toUpperCase()}
+                  {user.name?.substring(0, 2).toUpperCase() || user.email?.substring(0, 2).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <label 
