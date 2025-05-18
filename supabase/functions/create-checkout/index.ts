@@ -55,7 +55,12 @@ serve(async (req) => {
     }
 
     // Initialize Stripe with the secret key
-    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeKey) {
+      throw new Error("STRIPE_SECRET_KEY is not configured");
+    }
+    
+    const stripe = new Stripe(stripeKey, {
       apiVersion: "2023-10-16",
     });
 
@@ -79,20 +84,9 @@ serve(async (req) => {
       logStep("Created new Stripe customer", { customerId });
     }
 
-    // Usar o ID do produto para buscar o preço associado
-    const productId = "prod_SKEJde6PBj0Xia"; // ID do produto fornecido pelo usuário
-    const prices = await stripe.prices.list({
-      product: productId,
-      active: true,
-      limit: 1
-    });
-
-    if (prices.data.length === 0) {
-      throw new Error("No active price found for this product");
-    }
-
-    const priceId = prices.data[0].id;
-    logStep("Found price for product", { productId, priceId });
+    // Usar diretamente o ID do preço fornecido
+    const priceId = "price_1RMi1LLRBFllmSxQB8o9bv6H";
+    logStep("Using fixed price ID", { priceId });
 
     // Create a subscription checkout session
     const session = await stripe.checkout.sessions.create({
@@ -100,7 +94,7 @@ serve(async (req) => {
       payment_method_types: ["card"],
       line_items: [
         {
-          price: priceId, // Usar o ID do preço obtido
+          price: priceId,
           quantity: 1,
         },
       ],
