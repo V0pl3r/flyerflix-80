@@ -105,25 +105,24 @@ serve(async (req) => {
       }
     }
 
-    // Use the correct price ID for Ultimate plan (previously verified)
-    const priceId = "price_1RMi1LLRBFllmSxQB8o9bv6H";
-    logStep("Using fixed price ID", { priceId });
-
-    // Verify the price exists and is active before creating the session
-    try {
-      const price = await stripe.prices.retrieve(priceId);
-      if (!price.active) {
-        logStep("ERROR", { message: "Price is not active", priceId });
-        throw new Error("O preço não está ativo no Stripe");
-      }
-      logStep("Price is active and valid", { priceId });
-    } catch (error: any) {
-      if (error.type === "StripeInvalidRequestError") {
-        logStep("ERROR", { message: "Invalid price ID", priceId });
-        throw new Error("ID do preço inválido ou não encontrado no Stripe");
-      }
-      throw error;
+    // Use the product ID specified in the PRD
+    const productId = "prod_SHGYes8ihnURzd";
+    logStep("Using product ID from PRD", { productId });
+    
+    // Find the latest price for this product
+    const prices = await stripe.prices.list({
+      product: productId,
+      active: true,
+      limit: 1
+    });
+    
+    if (prices.data.length === 0) {
+      logStep("ERROR", { message: "No active price found for this product", productId });
+      throw new Error("No active price found for this product");
     }
+    
+    const priceId = prices.data[0].id;
+    logStep("Found active price ID", { priceId });
 
     // Create a subscription checkout session
     logStep("Creating checkout session", { customerId, priceId });

@@ -1,4 +1,3 @@
-
 import { createRoot } from 'react-dom/client'
 import { lazy, Suspense, useEffect } from 'react'
 import { isSlowConnection } from './lib/utils'
@@ -7,6 +6,7 @@ import { initSecurity } from './utils/securityUtils'
 import { Skeleton } from '@/components/ui/skeleton'
 import AppDefault from './App'
 import { addBounceKeyframes } from './utils/animationUtils'
+import { createAdminUser } from './utils/createAdminUser'
 
 // Initialize security measures
 initSecurity();
@@ -49,45 +49,10 @@ const AppLoader = () => {
   );
 };
 
-// Create and configure the admin user when running first time
-const configureAdminUser = async () => {
-  try {
-    const { supabase } = await import('./integrations/supabase/client');
-    
-    // Check if admin exists
-    const { data: existingUser } = await supabase.auth.signInWithPassword({
-      email: 'admin@flyerflix.com',
-      password: 'Flyerflix3118@'
-    });
-    
-    // If admin doesn't exist, create it
-    if (!existingUser?.user) {
-      const { data, error } = await supabase.auth.signUp({
-        email: 'admin@flyerflix.com',
-        password: 'Flyerflix3118@',
-      });
-      
-      if (error) {
-        console.error('Error creating admin user:', error);
-      } else {
-        console.log('Admin user created successfully');
-        
-        // Update the admin's profile
-        await supabase.from('profiles').update({
-          name: 'Administrator',
-          is_admin: true
-        }).eq('id', data.user?.id);
-      }
-    }
-  } catch (error) {
-    console.error('Failed to configure admin user:', error);
-  }
-};
-
-// Only run admin configuration in development
-if (process.env.NODE_ENV === 'development') {
-  configureAdminUser();
-}
+// Create admin user on app initialization
+createAdminUser().catch(err => 
+  console.error('Failed to initialize admin user:', err)
+);
 
 createRoot(document.getElementById("root")!).render(
   <Suspense fallback={<AppLoader />}>

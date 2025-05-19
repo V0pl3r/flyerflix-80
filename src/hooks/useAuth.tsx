@@ -9,7 +9,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchUserProfile } from '@/models/UserProfile';
+import { fetchUserProfile, updateUserProfile } from '@/models/UserProfile';
 
 type UserType = {
   id: string;
@@ -44,9 +44,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   // Load user from localStorage and Supabase on auth change
   useEffect(() => {
+    console.log("Auth provider initialized");
+    
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
+        console.log("Auth state changed:", event, "Session:", session ? "exists" : "none");
+        
         if (session && session.user) {
           // Use setTimeout to defer the Supabase profile fetch to prevent auth deadlock
           setTimeout(async () => {
@@ -54,6 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }, 0);
         } else {
           setUser(null);
+          setLoading(false);
         }
       }
     );
@@ -62,11 +67,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const loadInitialSession = async () => {
       try {
         setLoading(true);
+        console.log("Checking for existing session...");
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          console.log("Found existing session for user:", session.user.id);
           await loadUserProfile(session.user.id);
         } else {
+          console.log("No existing session found");
           setLoading(false);
         }
       } catch (error) {
@@ -94,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Convert profile data to UserType
         const userData: UserType = {
           id: profile.id,
-          name: profile.name || '',
+          name: profile.name || profile.first_name || '',
           email: profile.email || '',
           plan: profile.plan || 'free',
           downloads: profile.downloads_today || 0,
@@ -105,7 +113,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         setUser(userData);
         localStorage.setItem('flyerflix-user', JSON.stringify(userData));
-        console.log('User data saved to localStorage');
+        console.log('User data saved to localStorage:', userData);
+        setLoading(false);
       } else {
         console.log('Profile not found in Supabase, checking localStorage');
         // Fallback to localStorage if Supabase fetch fails
@@ -117,6 +126,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             parsedUser.id = userId;
             setUser(parsedUser);
             console.log('User loaded from localStorage:', parsedUser);
+            
+            // Also ensure the profile exists in Supabase
+            await updateUserProfile({
+              id: userId,
+              email: parsedUser.email,
+              name: parsedUser.name,
+              plan: parsedUser.plan,
+              is_admin: parsedUser.isAdmin,
+              downloads_today: parsedUser.downloads || 0,
+            });
           } catch (error) {
             console.error('Failed to parse stored user data:', error);
             localStorage.removeItem('flyerflix-user');
@@ -126,16 +145,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('No user in localStorage, creating default user');
           createDefaultUser(userId);
         }
+        setLoading(false);
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       createDefaultUser(userId);
-    } finally {
       setLoading(false);
     }
   };
   
-  const createDefaultUser = (userId: string) => {
+  const createDefaultUser = async (userId: string) => {
     // Create a default user object if none exists
     const defaultUser: UserType = {
       id: userId,
@@ -149,6 +168,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(defaultUser);
     localStorage.setItem('flyerflix-user', JSON.stringify(defaultUser));
     console.log('Created default user:', defaultUser);
+    
+    // Also create profile in Supabase
+    try {
+      await updateUserProfile({
+        id: userId,
+        plan: 'free',
+        is_admin: false,
+        downloads_today: 0
+      });
+    } catch (error) {
+      console.error('Failed to create profile in Supabase:', error);
+    }
   };
   
   // Check if user is admin
@@ -162,6 +193,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     
     try {
       setLoading(true);
+      console.log("Checking subscription status for user:", user.id);
+      
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
       if (error) {
@@ -170,11 +203,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (data) {
+        console.log("Subscription data received:", data);
         // Update the user object with the subscription details
         updateUser({
           plan: data.plan,
           maxDownloads: data.maxDownloads,
         });
+      } else {
+        console.log("No subscription data received");
       }
     } catch (error) {
       console.error('Failed to check subscription:', error);
@@ -211,7 +247,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       console.log("Checkout session created:", data);
       return data.url;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating checkout session:', error);
       toast({
         title: "Erro inesperado",
@@ -244,13 +280,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Login successful for user:', data.user.id);
         
         // Check if user is admin
-        const { data: profileData } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, role')
           .eq('id', data.user.id)
           .single();
           
-        const isAdminUser = profileData?.is_admin || false;
+        if (profileError) {
+          console.log('Profile not found, will be created during auth state change');
+        }
+        
+        const isAdminUser = profileData?.is_admin || profileData?.role === 'admin';
         
         // User profile will be loaded by the auth state change listener
         toast({
@@ -268,11 +308,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast({
-        title: "Erro ao fazer login",
-        description: error.message || "Verifique suas credenciais e tente novamente.",
-        variant: "destructive",
-      });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -293,6 +329,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Logout successful');
       localStorage.removeItem('flyerflix-welcome-seen');
       localStorage.removeItem('flyerflix-visited-dashboard');
+      localStorage.removeItem('flyerflix-user');
       setUser(null);
       navigate('/login');
     } catch (error: any) {
@@ -327,6 +364,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (data.user) {
+        // Create profile in Supabase
+        try {
+          await updateUserProfile({
+            id: data.user.id,
+            email: email,
+            name: name,
+            plan: 'free',
+            is_admin: false,
+            downloads_today: 0
+          });
+        } catch (profileError) {
+          console.error('Error creating profile:', profileError);
+          // Continue anyway, profile will be created on auth state change
+        }
+        
         // User profile will be loaded by the auth state change listener
         toast({
           title: "Registro realizado com sucesso!",
@@ -351,6 +403,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updatedUser = { ...user, ...data };
       localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
       setUser(updatedUser);
+      
+      // Also update in Supabase if we have an ID
+      if (user.id) {
+        updateUserProfile({
+          id: user.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          plan: updatedUser.plan as 'free' | 'ultimate' | null,
+          is_admin: updatedUser.isAdmin,
+          downloads_today: updatedUser.downloads
+        }).catch(err => {
+          console.error('Failed to update profile in Supabase:', err);
+        });
+      }
     }
   };
 

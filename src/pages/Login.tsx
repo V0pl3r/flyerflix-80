@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const { login, loading } = useAuth();
+  const { toast } = useToast();
   
   const logoRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -39,11 +42,39 @@ const Login = () => {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(email, password);
+    setLoginError(null);
+    
+    try {
+      // Check if using admin credentials
+      const isAdminLogin = email === 'admin@flyerflix.com';
+      
+      if (isAdminLogin) {
+        console.log('Attempting admin login...');
+      }
+      
+      await login(email, password);
+    } catch (error: any) {
+      console.error('Login error in component:', error);
+      setLoginError(error.message || 'Falha no login. Por favor, tente novamente.');
+      
+      toast({
+        title: "Erro no login",
+        description: error.message || "Verifique suas credenciais e tente novamente.",
+        variant: "destructive",
+      });
+    }
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  // Helper function for quick admin login in dev mode
+  const fillAdminCredentials = () => {
+    if (process.env.NODE_ENV === 'development') {
+      setEmail('admin@flyerflix.com');
+      setPassword('admin123@');
+    }
   };
 
   return (
@@ -61,7 +92,13 @@ const Login = () => {
         ref={formRef}
         className="w-full max-w-md bg-[#1e1e1e] p-8 rounded-lg shadow-lg border border-white/10 animate-fade-in"
       >
-        <h2 className="text-2xl font-bold text-white mb-6">Entrar</h2>
+        <h2 className="text-2xl font-bold text-white mb-6" onClick={fillAdminCredentials}>Entrar</h2>
+        
+        {loginError && (
+          <div className="bg-red-900/30 border border-red-500/50 text-white px-4 py-3 rounded mb-4">
+            <p className="text-sm">{loginError}</p>
+          </div>
+        )}
         
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-1">

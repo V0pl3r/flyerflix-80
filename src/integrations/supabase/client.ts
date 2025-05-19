@@ -17,6 +17,8 @@ export const supabase = createClient<Database>(
       storage: localStorage,
       persistSession: true,
       autoRefreshToken: true,
+      detectSessionInUrl: true, // Enable detecting auth sessions in URL for callback functionality
+      flowType: 'implicit' // Set to 'implicit' for better compatibility with Supabase auth
     }
   }
 );
