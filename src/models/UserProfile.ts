@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 
@@ -10,6 +11,7 @@ export interface UserProfile {
   avatar_url: string | null;
   plan: 'free' | 'ultimate' | null;
   role: 'user' | 'admin' | 'super_admin';
+  is_admin: boolean | null; // Added this property
   is_hidden: boolean;
   downloads_today: number | null;
   last_download_date: string | null;
