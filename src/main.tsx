@@ -1,3 +1,4 @@
+
 import { createRoot } from 'react-dom/client'
 import { lazy, Suspense, useEffect } from 'react'
 import { isSlowConnection } from './lib/utils'
