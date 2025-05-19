@@ -45,13 +45,13 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
     
     try {
       // First upload avatar if there's a new one
-      let avatarUrl = avatarPreview;
+      let avatarUrl = user.avatarUrl;
       
       // Only upload if there's a new file
       if (avatarFile) {
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-        const filePath = `avatars/${fileName}`;
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        const filePath = `${fileName}`;
         
         // Upload to Supabase Storage
         const { error: uploadError } = await supabase.storage

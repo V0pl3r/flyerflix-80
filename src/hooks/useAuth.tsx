@@ -64,10 +64,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (session?.user) {
           await loadUserProfile(session.user.id);
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error loading initial session:', error);
-      } finally {
         setLoading(false);
       }
     };
@@ -82,10 +83,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Load user profile data from Supabase
   const loadUserProfile = async (userId: string) => {
     try {
+      console.log('Loading user profile for ID:', userId);
       // Try to fetch from Supabase first
       const profile = await fetchUserProfile(userId);
       
       if (profile) {
+        console.log('Profile found in Supabase:', profile);
         // Convert profile data to UserType
         const userData: UserType = {
           id: profile.id,
@@ -99,7 +102,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         setUser(userData);
         localStorage.setItem('flyerflix-user', JSON.stringify(userData));
+        console.log('User data saved to localStorage');
       } else {
+        console.log('Profile not found in Supabase, checking localStorage');
         // Fallback to localStorage if Supabase fetch fails
         const storedUser = localStorage.getItem('flyerflix-user');
         if (storedUser) {
@@ -108,29 +113,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             // Ensure ID is set
             parsedUser.id = userId;
             setUser(parsedUser);
+            console.log('User loaded from localStorage:', parsedUser);
           } catch (error) {
             console.error('Failed to parse stored user data:', error);
             localStorage.removeItem('flyerflix-user');
+            createDefaultUser(userId);
           }
         } else {
-          // Create a default user object if none exists
-          const defaultUser: UserType = {
-            id: userId,
-            name: '',
-            email: '',
-            plan: 'free',
-            downloads: 0,
-            maxDownloads: 2
-          };
-          setUser(defaultUser);
-          localStorage.setItem('flyerflix-user', JSON.stringify(defaultUser));
+          console.log('No user in localStorage, creating default user');
+          createDefaultUser(userId);
         }
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
+      createDefaultUser(userId);
     } finally {
       setLoading(false);
     }
+  };
+  
+  const createDefaultUser = (userId: string) => {
+    // Create a default user object if none exists
+    const defaultUser: UserType = {
+      id: userId,
+      name: '',
+      email: '',
+      plan: 'free',
+      downloads: 0,
+      maxDownloads: 2
+    };
+    setUser(defaultUser);
+    localStorage.setItem('flyerflix-user', JSON.stringify(defaultUser));
+    console.log('Created default user:', defaultUser);
   };
   
   // Check subscription status from Stripe
@@ -172,10 +186,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     
     try {
+      console.log("Creating checkout session for user:", user.id);
       setLoading(true);
       const { data, error } = await supabase.functions.invoke('create-checkout');
       
       if (error) {
+        console.error("Checkout error:", error);
         toast({
           title: "Erro ao criar sessão de pagamento",
           description: error.message || "Tente novamente mais tarde.",
@@ -184,14 +200,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return null;
       }
       
+      console.log("Checkout session created:", data);
       return data.url;
     } catch (error) {
+      console.error('Error creating checkout session:', error);
       toast({
         title: "Erro inesperado",
         description: "Não foi possível iniciar o processo de upgrade.",
         variant: "destructive",
       });
-      console.error('Error creating checkout session:', error);
       return null;
     } finally {
       setLoading(false);
@@ -201,6 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
+      console.log('Attempting login for:', email);
       
       // Authenticate with Supabase
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -209,19 +227,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       
       if (error) {
+        console.error("Login error:", error);
         throw error;
       }
       
       if (data.user) {
+        console.log('Login successful for user:', data.user.id);
+        
+        // Get user email
+        const userEmail = data.user.email;
+        
+        // Check if user is admin
+        const isAdmin = userEmail === 'admin@flyerflix.com' || userEmail === 'diego@lovelystudio.com';
+        
         // User profile will be loaded by the auth state change listener
         toast({
           title: "Login realizado com sucesso!",
           description: "Bem-vindo de volta à Flyerflix.",
         });
         
-        navigate('/dashboard');
+        if (isAdmin) {
+          console.log('Admin user detected, redirecting to admin dashboard');
+          navigate('/admin/dashboard');
+        } else {
+          console.log('Regular user, redirecting to dashboard');
+          navigate('/dashboard');
+        }
       }
     } catch (error: any) {
+      console.error('Login error:', error);
       toast({
         title: "Erro ao fazer login",
         description: error.message || "Verifique suas credenciais e tente novamente.",
@@ -235,6 +269,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
+      console.log('Logging out current user');
       
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
@@ -243,11 +278,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
+      console.log('Logout successful');
       localStorage.removeItem('flyerflix-welcome-seen');
       localStorage.removeItem('flyerflix-visited-dashboard');
       setUser(null);
       navigate('/login');
     } catch (error: any) {
+      console.error('Logout error:', error);
       toast({
         title: "Erro ao sair",
         description: error.message || "Tente novamente.",

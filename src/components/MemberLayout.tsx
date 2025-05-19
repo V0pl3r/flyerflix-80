@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/components/ui/sonner';
 import WelcomeModal from './WelcomeModal';
+import ProfileModal from './ProfileModal';
 
 interface MemberLayoutProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const [firstVisit, setFirstVisit] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -98,6 +100,8 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription]);
   
   const handleUpgrade = async () => {
+    if (!user) return;
+    
     const checkoutUrl = await createCheckoutSession();
     
     if (checkoutUrl) {
@@ -109,6 +113,10 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const handleLogout = () => {
     logout();
   };
+  
+  const openProfileModal = () => {
+    setShowProfileModal(true);
+  };
 
   return (
     <div className="min-h-screen bg-flyerflix-black text-white overflow-hidden">
@@ -117,6 +125,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       
       {/* Welcome Modal */}
       {showWelcomeMessage && user && <WelcomeModal userName={user.name || undefined} />}
+      
+      {/* Profile Modal */}
+      <ProfileModal open={showProfileModal} onOpenChange={setShowProfileModal} />
       
       {/* Main Content */}
       <div 
@@ -146,6 +157,13 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
           <div className="md:hidden font-bold text-flyerflix-red text-lg">FLYERFLIX</div>
           
           <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost" 
+              className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"
+              onClick={openProfileModal}
+            >
+              Perfil
+            </Button>
             <Button
               variant="ghost" 
               className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"

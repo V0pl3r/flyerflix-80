@@ -32,6 +32,7 @@ serve(async (req) => {
     // Authenticate the user
     const authHeader = req.headers.get("Authorization")!;
     if (!authHeader) {
+      logStep("ERROR", { message: "Authorization header is missing" });
       throw new Error("Authorization header is missing");
     }
     
@@ -40,19 +41,20 @@ serve(async (req) => {
     const user = data.user;
     
     if (!user?.email) {
+      logStep("ERROR", { message: "User not authenticated or email not available" });
       throw new Error("User not authenticated or email not available");
     }
     
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Buscar os dados do perfil, incluindo o nome
+    // Get user profile data for the customer name
     const { data: profileData } = await supabaseClient
       .from('profiles')
       .select('name, first_name, last_name')
       .eq('id', user.id)
       .single();
 
-    // Determinar o nome a ser usado para o cliente Stripe
+    // Determine the name to use for the Stripe customer
     let customerName = profileData?.name;
     if (!customerName && (profileData?.first_name || profileData?.last_name)) {
       customerName = `${profileData?.first_name || ''} ${profileData?.last_name || ''}`.trim();
@@ -89,13 +91,25 @@ serve(async (req) => {
       });
       customerId = newCustomer.id;
       logStep("Created new Stripe customer", { customerId });
+      
+      // Save the Stripe customer ID to the user's profile
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({ stripe_customer_id: customerId })
+        .eq('id', user.id);
+      
+      if (updateError) {
+        logStep("WARNING", { message: "Failed to save Stripe customer ID to profile", error: updateError.message });
+      } else {
+        logStep("Saved Stripe customer ID to profile", { userId: user.id });
+      }
     }
 
-    // Usar diretamente o ID do preço fornecido
+    // Use the correct price ID for Ultimate plan (previously verified)
     const priceId = "price_1RMi1LLRBFllmSxQB8o9bv6H";
     logStep("Using fixed price ID", { priceId });
 
-    // Verificar se o preço existe e está ativo antes de criar a sessão
+    // Verify the price exists and is active before creating the session
     try {
       const price = await stripe.prices.retrieve(priceId);
       if (!price.active) {
@@ -103,7 +117,7 @@ serve(async (req) => {
         throw new Error("O preço não está ativo no Stripe");
       }
       logStep("Price is active and valid", { priceId });
-    } catch (error) {
+    } catch (error: any) {
       if (error.type === "StripeInvalidRequestError") {
         logStep("ERROR", { message: "Invalid price ID", priceId });
         throw new Error("ID do preço inválido ou não encontrado no Stripe");
@@ -126,6 +140,11 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/dashboard?upgrade=success`,
       cancel_url: `${req.headers.get("origin")}/configuracoes?upgrade=canceled`,
       locale: "pt-BR",
+      allow_promotion_codes: true,
+      billing_address_collection: "auto",
+      customer_update: {
+        address: 'auto',
+      },
     });
 
     logStep("Created checkout session", { sessionId: session.id, url: session.url });
@@ -140,7 +159,7 @@ serve(async (req) => {
   } catch (error: any) {
     console.error("Error in create-checkout function:", error);
     
-    // Registrar detalhes mais específicos do erro
+    // Log more specific details for Stripe errors
     if (error.type && error.type.startsWith("Stripe")) {
       logStep("Stripe API Error", { 
         type: error.type,

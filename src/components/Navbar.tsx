@@ -1,14 +1,24 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   useEffect(() => {
     const user = localStorage.getItem('flyerflix-user');
@@ -25,14 +35,59 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+  
+  // Admin login handler
+  const handleAdminLogin = async () => {
+    try {
+      setIsLoading(true);
+      // Admin has specific email to identify them
+      if (adminEmail !== 'admin@flyerflix.com' && adminEmail !== 'diego@lovelystudio.com') {
+        throw new Error('Email de administrador não reconhecido');
+      }
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: adminEmail,
+        password: adminPassword
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Login de administrador bem-sucedido",
+        description: "Redirecionando para o painel administrativo."
+      });
+      
+      setShowAdminLogin(false);
+      navigate('/admin/dashboard');
+    } catch (error: any) {
+      toast({
+        title: "Erro no login de administrador",
+        description: error.message || "Verifique suas credenciais e tente novamente",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // Hidden admin trigger - triple click on logo
+  const handleLogoTripleClick = () => {
+    setShowAdminLogin(true);
+  };
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-flyerflix-black/95 shadow-md backdrop-blur-md' : 'bg-flyerflix-black/90 backdrop-blur-sm'} animate-slide-in-down`}>
       <div className="flyerflix-container py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
+          {/* Logo with hidden admin trigger */}
           <div className="flex items-center">
-            <Link to="/" className="text-flyerflix-red text-3xl font-bold transition-transform duration-300 hover:scale-105">FLYERFLIX</Link>
+            <Link 
+              to="/" 
+              className="text-flyerflix-red text-3xl font-bold transition-transform duration-300 hover:scale-105"
+              onDoubleClick={handleLogoTripleClick}
+            >
+              FLYERFLIX
+            </Link>
           </div>
           
           {/* Right Side Menu (Desktop) */}
@@ -79,6 +134,61 @@ const Navbar = () => {
           </div>
         )}
       </div>
+      
+      {/* Hidden Admin Login Dialog */}
+      <Dialog open={showAdminLogin} onOpenChange={setShowAdminLogin}>
+        <DialogContent className="bg-[#1e1e1e] border-white/10 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock size={16} /> Login Administrativo
+            </DialogTitle>
+            <DialogDescription className="text-white/70">
+              Acesse o painel de administração da Flyerflix
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="admin-email">Email</Label>
+              <Input 
+                id="admin-email" 
+                type="email" 
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className="bg-[#2a2a2a] border-white/10"
+                placeholder="admin@flyerflix.com"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="admin-password">Senha</Label>
+              <Input 
+                id="admin-password" 
+                type="password" 
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="bg-[#2a2a2a] border-white/10"
+              />
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowAdminLogin(false)} 
+              className="border-white/20 hover:bg-white/10"
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleAdminLogin}
+              className="bg-flyerflix-red hover:bg-red-700"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Entrando...' : 'Entrar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </nav>
   );
 };
