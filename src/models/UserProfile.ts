@@ -49,6 +49,7 @@ export async function fetchUserProfile(userId: string): Promise<UserProfile | nu
       avatar_url: data.avatar_url,
       plan: data.plan as 'free' | 'ultimate' | null,
       role: data.role,
+      is_admin: data.is_admin, // Include is_admin property here
       is_hidden: data.is_hidden,
       downloads_today: data.downloads_today,
       last_download_date: data.last_download_date,
@@ -85,6 +86,7 @@ export async function updateUserProfile(profile: Partial<UserProfile>): Promise<
         email: profile.email,
         avatar_url: profile.avatar_url,
         plan: profile.plan,
+        is_admin: profile.is_admin, // Include is_admin in the update
         downloads_today: profile.downloads_today,
         last_download_date: profile.last_download_date,
         favorites: profile.favorites,
@@ -121,6 +123,7 @@ export async function updateUserProfile(profile: Partial<UserProfile>): Promise<
       avatar_url: data.avatar_url,
       plan: data.plan as 'free' | 'ultimate' | null,
       role: data.role,
+      is_admin: data.is_admin, // Include is_admin property here
       is_hidden: data.is_hidden,
       downloads_today: data.downloads_today,
       last_download_date: data.last_download_date,
@@ -160,6 +163,7 @@ async function createUserProfile(profile: Partial<UserProfile>): Promise<UserPro
         avatar_url: profile.avatar_url || null,
         plan: profile.plan || 'free',
         role: profile.role || 'user',
+        is_admin: profile.is_admin !== undefined ? profile.is_admin : false, // Include is_admin with default value
         is_hidden: profile.is_hidden !== undefined ? profile.is_hidden : false,
         downloads_today: profile.downloads_today || 0,
         last_download_date: profile.last_download_date || null,
@@ -189,6 +193,7 @@ async function createUserProfile(profile: Partial<UserProfile>): Promise<UserPro
       avatar_url: data.avatar_url,
       plan: data.plan as 'free' | 'ultimate' | null,
       role: data.role,
+      is_admin: data.is_admin, // Include is_admin property here
       is_hidden: data.is_hidden,
       downloads_today: data.downloads_today,
       last_download_date: data.last_download_date,
