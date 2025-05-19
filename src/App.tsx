@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
+import AdminRouteGuard from "./components/AdminRouteGuard";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -56,9 +57,17 @@ const App = () => (
             <Route path="/termos-de-uso" element={<TermsOfUse />} />
             <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
             
-            {/* Admin Routes */}
-            <Route path="/admin" element={<AdminLayout />}>
+            {/* Admin Routes - Protected by AdminRouteGuard */}
+            <Route 
+              path="/admin" 
+              element={
+                <AdminRouteGuard>
+                  <AdminLayout />
+                </AdminRouteGuard>
+              }
+            >
               <Route index element={<AdminDashboard />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="templates" element={<AdminTemplates />} />
               <Route path="categorias" element={<AdminCategories />} />
               <Route path="usuarios" element={<AdminUsers />} />

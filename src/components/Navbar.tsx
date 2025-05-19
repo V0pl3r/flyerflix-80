@@ -17,6 +17,7 @@ const Navbar = () => {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [logoClickCounter, setLogoClickCounter] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   
@@ -35,13 +36,30 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Logo click counter for hidden admin trigger
+  useEffect(() => {
+    if (logoClickCounter >= 3) {
+      setShowAdminLogin(true);
+      setLogoClickCounter(0);
+    }
+    
+    // Reset counter if no clicks for 2 seconds
+    const timeout = setTimeout(() => {
+      if (logoClickCounter > 0 && logoClickCounter < 3) {
+        setLogoClickCounter(0);
+      }
+    }, 2000);
+    
+    return () => clearTimeout(timeout);
+  }, [logoClickCounter]);
   
   // Admin login handler
   const handleAdminLogin = async () => {
     try {
       setIsLoading(true);
       // Admin has specific email to identify them
-      if (adminEmail !== 'admin@flyerflix.com' && adminEmail !== 'diego@lovelystudio.com') {
+      if (adminEmail !== 'admin@flyerflix.com') {
         throw new Error('Email de administrador não reconhecido');
       }
       
@@ -52,10 +70,28 @@ const Navbar = () => {
       
       if (error) throw error;
       
+      // Verify if user is admin in profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_admin')
+        .eq('id', data.user.id)
+        .single();
+      
+      if (profileError || !profileData || !profileData.is_admin) {
+        throw new Error('Acesso administrativo não autorizado');
+      }
+      
       toast({
         title: "Login de administrador bem-sucedido",
         description: "Redirecionando para o painel administrativo."
       });
+      
+      // Store admin status in localStorage
+      const userObj = JSON.parse(localStorage.getItem('flyerflix-user') || '{}');
+      localStorage.setItem('flyerflix-user', JSON.stringify({
+        ...userObj,
+        isAdmin: true
+      }));
       
       setShowAdminLogin(false);
       navigate('/admin/dashboard');
@@ -71,8 +107,8 @@ const Navbar = () => {
   };
   
   // Hidden admin trigger - triple click on logo
-  const handleLogoTripleClick = () => {
-    setShowAdminLogin(true);
+  const handleLogoClick = () => {
+    setLogoClickCounter(prev => prev + 1);
   };
 
   return (
@@ -84,7 +120,7 @@ const Navbar = () => {
             <Link 
               to="/" 
               className="text-flyerflix-red text-3xl font-bold transition-transform duration-300 hover:scale-105"
-              onDoubleClick={handleLogoTripleClick}
+              onClick={handleLogoClick}
             >
               FLYERFLIX
             </Link>

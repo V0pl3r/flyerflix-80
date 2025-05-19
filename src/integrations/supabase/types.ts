@@ -75,6 +75,7 @@ export type Database = {
           favorites: string[] | null
           first_name: string | null
           id: string
+          is_admin: boolean | null
           is_hidden: boolean
           last_download_date: string | null
           last_name: string | null
@@ -93,6 +94,7 @@ export type Database = {
           favorites?: string[] | null
           first_name?: string | null
           id: string
+          is_admin?: boolean | null
           is_hidden?: boolean
           last_download_date?: string | null
           last_name?: string | null
@@ -111,6 +113,7 @@ export type Database = {
           favorites?: string[] | null
           first_name?: string | null
           id?: string
+          is_admin?: boolean | null
           is_hidden?: boolean
           last_download_date?: string | null
           last_name?: string | null

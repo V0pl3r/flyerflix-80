@@ -19,6 +19,7 @@ type UserType = {
   downloads: number;
   maxDownloads: number | "unlimited";
   avatarUrl?: string;
+  isAdmin?: boolean;
 };
 
 interface AuthContextType {
@@ -30,6 +31,7 @@ interface AuthContextType {
   updateUser: (data: Partial<UserType>) => void;
   checkSubscription: () => Promise<void>;
   createCheckoutSession: () => Promise<string | null>;
+  isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -98,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           downloads: profile.downloads_today || 0,
           maxDownloads: profile.plan === 'ultimate' ? 'unlimited' : 2,
           avatarUrl: profile.avatar_url || '',
+          isAdmin: profile.is_admin || false,
         };
         
         setUser(userData);
@@ -140,11 +143,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email: '',
       plan: 'free',
       downloads: 0,
-      maxDownloads: 2
+      maxDownloads: 2,
+      isAdmin: false
     };
     setUser(defaultUser);
     localStorage.setItem('flyerflix-user', JSON.stringify(defaultUser));
     console.log('Created default user:', defaultUser);
+  };
+  
+  // Check if user is admin
+  const isAdmin = () => {
+    return !!user?.isAdmin;
   };
   
   // Check subscription status from Stripe
@@ -234,11 +243,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.user) {
         console.log('Login successful for user:', data.user.id);
         
-        // Get user email
-        const userEmail = data.user.email;
-        
         // Check if user is admin
-        const isAdmin = userEmail === 'admin@flyerflix.com' || userEmail === 'diego@lovelystudio.com';
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', data.user.id)
+          .single();
+          
+        const isAdminUser = profileData?.is_admin || false;
         
         // User profile will be loaded by the auth state change listener
         toast({
@@ -246,7 +258,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           description: "Bem-vindo de volta à Flyerflix.",
         });
         
-        if (isAdmin) {
+        if (isAdminUser) {
           console.log('Admin user detected, redirecting to admin dashboard');
           navigate('/admin/dashboard');
         } else {
@@ -352,7 +364,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         register, 
         updateUser,
         checkSubscription,
-        createCheckoutSession
+        createCheckoutSession,
+        isAdmin
       }}
     >
       {children}
