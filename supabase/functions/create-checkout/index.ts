@@ -105,33 +105,24 @@ serve(async (req) => {
       }
     }
 
-    // Use the product ID specified in the PRD
-    const productId = "prod_SHGYes8ihnURzd";
-    logStep("Using product ID from PRD", { productId });
-    
-    // Find the latest price for this product
-    const prices = await stripe.prices.list({
-      product: productId,
-      active: true,
-      limit: 1
-    });
-    
-    if (prices.data.length === 0) {
-      logStep("ERROR", { message: "No active price found for this product", productId });
-      throw new Error("No active price found for this product");
-    }
-    
-    const priceId = prices.data[0].id;
-    logStep("Found active price ID", { priceId });
-
-    // Create a subscription checkout session
-    logStep("Creating checkout session", { customerId, priceId });
+    // Create a subscription checkout session with a simple price
+    logStep("Creating checkout session for subscription", { customerId });
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       payment_method_types: ["card"],
       line_items: [
         {
-          price: priceId,
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: "Flyerflix Ultimate",
+              description: "Acesso completo à plataforma Flyerflix"
+            },
+            unit_amount: 2390, // R$23,90 in centavos
+            recurring: {
+              interval: "month"
+            }
+          },
           quantity: 1,
         },
       ],

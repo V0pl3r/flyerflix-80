@@ -1,443 +1,18 @@
 
-import { 
-  createContext, 
-  useContext, 
-  useState, 
-  useEffect, 
-  ReactNode 
-} from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchUserProfile, updateUserProfile } from '@/models/UserProfile';
-
-type UserType = {
-  id: string;
-  name: string;
-  email: string;
-  plan: string;
-  downloads: number;
-  maxDownloads: number | "unlimited";
-  avatarUrl?: string;
-  isAdmin?: boolean;
-};
+import { toast } from '@/components/ui/sonner';
 
 interface AuthContextType {
-  user: UserType | null;
-  loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  user: User | null;
+  session: Session | null;
   logout: () => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
-  updateUser: (data: Partial<UserType>) => void;
-  checkSubscription: () => Promise<void>;
   createCheckoutSession: () => Promise<string | null>;
-  isAdmin: () => boolean;
+  checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<UserType | null>(null);
-  const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  
-  // Load user from localStorage and Supabase on auth change
-  useEffect(() => {
-    console.log("Auth provider initialized");
-    
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state changed:", event, "Session:", session ? "exists" : "none");
-        
-        if (session && session.user) {
-          // Use setTimeout to defer the Supabase profile fetch to prevent auth deadlock
-          setTimeout(async () => {
-            await loadUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setUser(null);
-          setLoading(false);
-        }
-      }
-    );
-
-    // Check for existing session
-    const loadInitialSession = async () => {
-      try {
-        setLoading(true);
-        console.log("Checking for existing session...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user) {
-          console.log("Found existing session for user:", session.user.id);
-          await loadUserProfile(session.user.id);
-        } else {
-          console.log("No existing session found");
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error loading initial session:', error);
-        setLoading(false);
-      }
-    };
-    
-    loadInitialSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-  
-  // Load user profile data from Supabase
-  const loadUserProfile = async (userId: string) => {
-    try {
-      console.log('Loading user profile for ID:', userId);
-      // Try to fetch from Supabase first
-      const profile = await fetchUserProfile(userId);
-      
-      if (profile) {
-        console.log('Profile found in Supabase:', profile);
-        // Convert profile data to UserType
-        const userData: UserType = {
-          id: profile.id,
-          name: profile.name || profile.first_name || '',
-          email: profile.email || '',
-          plan: profile.plan || 'free',
-          downloads: profile.downloads_today || 0,
-          maxDownloads: profile.plan === 'ultimate' ? 'unlimited' : 2,
-          avatarUrl: profile.avatar_url || '',
-          isAdmin: profile.is_admin || false,
-        };
-        
-        setUser(userData);
-        localStorage.setItem('flyerflix-user', JSON.stringify(userData));
-        console.log('User data saved to localStorage:', userData);
-        setLoading(false);
-      } else {
-        console.log('Profile not found in Supabase, checking localStorage');
-        // Fallback to localStorage if Supabase fetch fails
-        const storedUser = localStorage.getItem('flyerflix-user');
-        if (storedUser) {
-          try {
-            const parsedUser = JSON.parse(storedUser);
-            // Ensure ID is set
-            parsedUser.id = userId;
-            setUser(parsedUser);
-            console.log('User loaded from localStorage:', parsedUser);
-            
-            // Also ensure the profile exists in Supabase
-            await updateUserProfile({
-              id: userId,
-              email: parsedUser.email,
-              name: parsedUser.name,
-              plan: parsedUser.plan,
-              is_admin: parsedUser.isAdmin,
-              downloads_today: parsedUser.downloads || 0,
-            });
-          } catch (error) {
-            console.error('Failed to parse stored user data:', error);
-            localStorage.removeItem('flyerflix-user');
-            createDefaultUser(userId);
-          }
-        } else {
-          console.log('No user in localStorage, creating default user');
-          createDefaultUser(userId);
-        }
-        setLoading(false);
-      }
-    } catch (error) {
-      console.error('Error loading user profile:', error);
-      createDefaultUser(userId);
-      setLoading(false);
-    }
-  };
-  
-  const createDefaultUser = async (userId: string) => {
-    // Create a default user object if none exists
-    const defaultUser: UserType = {
-      id: userId,
-      name: '',
-      email: '',
-      plan: 'free',
-      downloads: 0,
-      maxDownloads: 2,
-      isAdmin: false
-    };
-    setUser(defaultUser);
-    localStorage.setItem('flyerflix-user', JSON.stringify(defaultUser));
-    console.log('Created default user:', defaultUser);
-    
-    // Also create profile in Supabase
-    try {
-      await updateUserProfile({
-        id: userId,
-        plan: 'free',
-        is_admin: false,
-        downloads_today: 0
-      });
-    } catch (error) {
-      console.error('Failed to create profile in Supabase:', error);
-    }
-  };
-  
-  // Check if user is admin
-  const isAdmin = () => {
-    return !!user?.isAdmin;
-  };
-  
-  // Check subscription status from Stripe
-  const checkSubscription = async () => {
-    if (!user?.id) return;
-    
-    try {
-      setLoading(true);
-      console.log("Checking subscription status for user:", user.id);
-      
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      
-      if (error) {
-        console.error('Error checking subscription:', error);
-        return;
-      }
-      
-      if (data) {
-        console.log("Subscription data received:", data);
-        // Update the user object with the subscription details
-        updateUser({
-          plan: data.plan,
-          maxDownloads: data.maxDownloads,
-        });
-      } else {
-        console.log("No subscription data received");
-      }
-    } catch (error) {
-      console.error('Failed to check subscription:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Create a checkout session for subscription
-  const createCheckoutSession = async (): Promise<string | null> => {
-    if (!user) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar logado para fazer upgrade.",
-        variant: "destructive",
-      });
-      return null;
-    }
-    
-    try {
-      console.log("Creating checkout session for user:", user.id);
-      setLoading(true);
-      const { data, error } = await supabase.functions.invoke('create-checkout');
-      
-      if (error) {
-        console.error("Checkout error:", error);
-        toast({
-          title: "Erro ao criar sessão de pagamento",
-          description: error.message || "Tente novamente mais tarde.",
-          variant: "destructive",
-        });
-        return null;
-      }
-      
-      console.log("Checkout session created:", data);
-      return data.url;
-    } catch (error: any) {
-      console.error('Error creating checkout session:', error);
-      toast({
-        title: "Erro inesperado",
-        description: "Não foi possível iniciar o processo de upgrade.",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const login = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      console.log('Attempting login for:', email);
-      
-      // Authenticate with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-      
-      if (error) {
-        console.error("Login error:", error);
-        throw error;
-      }
-      
-      if (data.user) {
-        console.log('Login successful for user:', data.user.id);
-        
-        // Check if user is admin
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('is_admin, role')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (profileError) {
-          console.log('Profile not found, will be created during auth state change');
-        }
-        
-        const isAdminUser = profileData?.is_admin || profileData?.role === 'admin';
-        
-        // User profile will be loaded by the auth state change listener
-        toast({
-          title: "Login realizado com sucesso!",
-          description: "Bem-vindo de volta à Flyerflix.",
-        });
-        
-        if (isAdminUser) {
-          console.log('Admin user detected, redirecting to admin dashboard');
-          navigate('/admin/dashboard');
-        } else {
-          console.log('Regular user, redirecting to dashboard');
-          navigate('/dashboard');
-        }
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const logout = async () => {
-    try {
-      setLoading(true);
-      console.log('Logging out current user');
-      
-      // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        throw error;
-      }
-      
-      console.log('Logout successful');
-      localStorage.removeItem('flyerflix-welcome-seen');
-      localStorage.removeItem('flyerflix-visited-dashboard');
-      localStorage.removeItem('flyerflix-user');
-      setUser(null);
-      navigate('/login');
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      toast({
-        title: "Erro ao sair",
-        description: error.message || "Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const register = async (name: string, email: string, password: string) => {
-    try {
-      setLoading(true);
-      
-      // Register with Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: name
-          }
-        }
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      if (data.user) {
-        // Create profile in Supabase
-        try {
-          await updateUserProfile({
-            id: data.user.id,
-            email: email,
-            name: name,
-            plan: 'free',
-            is_admin: false,
-            downloads_today: 0
-          });
-        } catch (profileError) {
-          console.error('Error creating profile:', profileError);
-          // Continue anyway, profile will be created on auth state change
-        }
-        
-        // User profile will be loaded by the auth state change listener
-        toast({
-          title: "Registro realizado com sucesso!",
-          description: "Bem-vindo à Flyerflix.",
-        });
-        
-        navigate('/dashboard');
-      }
-    } catch (error: any) {
-      toast({
-        title: "Erro ao registrar",
-        description: error.message || "Tente novamente com informações diferentes.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const updateUser = (data: Partial<UserType>) => {
-    if (user) {
-      const updatedUser = { ...user, ...data };
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
-      
-      // Also update in Supabase if we have an ID
-      if (user.id) {
-        updateUserProfile({
-          id: user.id,
-          name: updatedUser.name,
-          email: updatedUser.email,
-          plan: updatedUser.plan as 'free' | 'ultimate' | null,
-          is_admin: updatedUser.isAdmin,
-          downloads_today: updatedUser.downloads
-        }).catch(err => {
-          console.error('Failed to update profile in Supabase:', err);
-        });
-      }
-    }
-  };
-
-  return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading, 
-        login, 
-        logout, 
-        register, 
-        updateUser,
-        checkSubscription,
-        createCheckoutSession,
-        isAdmin
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -445,4 +20,138 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
+};
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider = ({ children }: AuthProviderProps) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Store user data in localStorage for persistence
+        if (session?.user) {
+          localStorage.setItem('flyerflix-user', JSON.stringify({
+            id: session.user.id,
+            email: session.user.email,
+            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name
+          }));
+        } else {
+          localStorage.removeItem('flyerflix-user');
+        }
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session check:', session?.user?.email);
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        localStorage.setItem('flyerflix-user', JSON.stringify({
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name
+        }));
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      localStorage.removeItem('flyerflix-user');
+      setUser(null);
+      setSession(null);
+      
+      toast.success('Logout realizado com sucesso!');
+    } catch (error: any) {
+      console.error('Error during logout:', error);
+      toast.error('Erro ao fazer logout: ' + error.message);
+    }
+  };
+
+  const createCheckoutSession = async (): Promise<string | null> => {
+    try {
+      if (!session) {
+        toast.error('Você precisa estar logado para fazer upgrade');
+        return null;
+      }
+
+      toast.loading('Criando sessão de checkout...', { duration: 2000 });
+
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error creating checkout session:', error);
+        toast.error('Erro ao criar sessão de checkout: ' + error.message);
+        return null;
+      }
+
+      if (data.url) {
+        toast.success('Redirecionando para o checkout...');
+        return data.url;
+      } else {
+        toast.error('URL de checkout não foi retornada');
+        return null;
+      }
+    } catch (error: any) {
+      console.error('Error in createCheckoutSession:', error);
+      toast.error('Erro inesperado: ' + error.message);
+      return null;
+    }
+  };
+
+  const checkSubscription = async () => {
+    try {
+      if (!session) return;
+
+      const { data, error } = await supabase.functions.invoke('check-subscription', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error checking subscription:', error);
+        return;
+      }
+
+      console.log('Subscription check result:', data);
+    } catch (error: any) {
+      console.error('Error in checkSubscription:', error);
+    }
+  };
+
+  const value = {
+    user,
+    session,
+    logout,
+    createCheckoutSession,
+    checkSubscription,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
