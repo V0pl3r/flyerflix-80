@@ -18,7 +18,7 @@ interface MemberLayoutProps {
 
 const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
-  const [firstVisit, setFirstVisit] = useState(false);
+  const [firstVisit, setFirstVisit] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -26,19 +26,13 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const navigate = useNavigate();
   const location = useLocation();
   const { toast: uiToast } = useToast();
-  const { user, logout, createCheckoutSession, checkSubscription, loading } = useAuth();
+  const { user, logout, createCheckoutSession, checkSubscription } = useAuth();
   
   const isPlanFree = user?.plan === 'free';
   
   useEffect(() => {
-    // Only redirect if we're done loading and there's no user
-    if (!loading && !user) {
+    if (!user) {
       navigate('/login');
-      return;
-    }
-
-    // Don't do anything else if still loading or no user
-    if (loading || !user) {
       return;
     }
     
@@ -66,24 +60,22 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       navigate(location.pathname, { replace: true });
     }
     
-    // Show banner for free users on their first visit - using user-specific storage
-    if (isPlanFree && showWelcomeMessage && user?.id) {
-      const hasSeenWelcome = localStorage.getItem(`flyerflix-welcome-seen-${user.id}`);
+    // Show banner for free users on their first visit
+    if (isPlanFree && showWelcomeMessage) {
+      const hasSeenWelcome = localStorage.getItem('flyerflix-welcome-seen');
       if (!hasSeenWelcome) {
         setShowBanner(true);
-        localStorage.setItem(`flyerflix-welcome-seen-${user.id}`, 'true');
+        localStorage.setItem('flyerflix-welcome-seen', 'true');
       }
     }
     
-    // Check if this is first time viewing dashboard - using user-specific storage
-    if (user?.id) {
-      const visitedDashboard = localStorage.getItem(`flyerflix-visited-dashboard-${user.id}`);
-      if (!visitedDashboard && showWelcomeMessage) {
-        setFirstVisit(true);
-        localStorage.setItem(`flyerflix-visited-dashboard-${user.id}`, 'true');
-      } else {
-        setFirstVisit(false);
-      }
+    // Check if this is first time viewing dashboard
+    const visitedDashboard = localStorage.getItem('flyerflix-visited-dashboard');
+    if (!visitedDashboard && showWelcomeMessage) {
+      setFirstVisit(true);
+      localStorage.setItem('flyerflix-visited-dashboard', 'true');
+    } else {
+      setFirstVisit(false);
     }
     
     // Check if user is on mobile
@@ -105,24 +97,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     return () => {
       window.removeEventListener('resize', checkIsMobile);
     };
-  }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription, loading]);
-  
-  // Show loading state while auth is loading
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-flyerflix-black text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-flyerflix-red mx-auto mb-4"></div>
-          <p>Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render anything if no user (will redirect)
-  if (!user) {
-    return null;
-  }
+  }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription]);
   
   const handleUpgrade = async () => {
     if (!user) return;
@@ -142,9 +117,6 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const openProfileModal = () => {
     setShowProfileModal(true);
   };
-
-  // Display user-specific greeting
-  const userGreeting = user?.name || user?.email?.split('@')[0] || 'Usuário';
 
   return (
     <div className="min-h-screen bg-flyerflix-black text-white overflow-hidden">
@@ -185,9 +157,6 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
           <div className="md:hidden font-bold text-flyerflix-red text-lg">FLYERFLIX</div>
           
           <div className="flex items-center space-x-4">
-            <span className="text-white/70 text-sm hidden md:block">
-              Olá, {userGreeting}
-            </span>
             <Button
               variant="ghost" 
               className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"
@@ -243,9 +212,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
         {firstVisit && (
           <div className="px-4 md:px-6 py-4 bg-white/5 border-b border-white/10 animate-fade-in">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-xl font-bold">Bem-vindo à Flyerflix, {userGreeting}!</h2>
+              <h2 className="text-xl font-bold">Bem-vindo à Flyerflix!</h2>
               <p className="text-white/70 mt-1">
-                Esta é sua área pessoal. Explore nossa biblioteca de templates e comece a criar designs incríveis para seus eventos.
+                Explore nossa biblioteca de templates e comece a criar designs incríveis para seus eventos.
               </p>
             </div>
           </div>

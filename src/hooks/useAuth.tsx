@@ -59,21 +59,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           };
           setUser(extendedUser);
           
-          // Store user data in localStorage for persistence with user isolation
-          localStorage.setItem(`flyerflix-user-${session.user.id}`, JSON.stringify({
+          // Store user data in localStorage for persistence
+          localStorage.setItem('flyerflix-user', JSON.stringify({
             ...extendedUser,
             id: session.user.id,
             email: session.user.email
           }));
         } else {
           setUser(null);
-          // Clear all user-specific data on logout
-          const keys = Object.keys(localStorage);
-          keys.forEach(key => {
-            if (key.startsWith('flyerflix-user-')) {
-              localStorage.removeItem(key);
-            }
-          });
+          localStorage.removeItem('flyerflix-user');
         }
         
         setLoading(false);
@@ -94,8 +88,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         };
         setUser(extendedUser);
         
-        // Store with user-specific key for data isolation
-        localStorage.setItem(`flyerflix-user-${session.user.id}`, JSON.stringify({
+        localStorage.setItem('flyerflix-user', JSON.stringify({
           ...extendedUser,
           id: session.user.id,
           email: session.user.email
@@ -137,21 +130,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear all user-specific data
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith('flyerflix-user-')) {
-          localStorage.removeItem(key);
-        }
-      });
-      
+      localStorage.removeItem('flyerflix-user');
       setUser(null);
       setSession(null);
       
       toast.success('Logout realizado com sucesso!');
-      
-      // Redirect to home page after logout
-      window.location.href = '/';
     } catch (error: any) {
       console.error('Error during logout:', error);
       toast.error('Erro ao fazer logout: ' + error.message);
@@ -162,8 +145,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      // Update with user-specific key
-      localStorage.setItem(`flyerflix-user-${user.id}`, JSON.stringify(updatedUser));
+      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
     }
   };
 
