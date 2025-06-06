@@ -4,12 +4,23 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
+// Extended user interface with custom properties
+interface ExtendedUser extends User {
+  name?: string;
+  plan?: 'free' | 'ultimate';
+  avatarUrl?: string;
+}
+
 interface AuthContextType {
-  user: User | null;
+  user: ExtendedUser | null;
   session: Session | null;
+  loading: boolean;
   logout: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ error: any }>;
   createCheckoutSession: () => Promise<string | null>;
   checkSubscription: () => Promise<void>;
+  updateUser: (userData: Partial<ExtendedUser>) => void;
+  isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,8 +38,9 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<ExtendedUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -36,18 +48,29 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
-        setUser(session?.user ?? null);
         
-        // Store user data in localStorage for persistence
         if (session?.user) {
+          // Create extended user with default properties
+          const extendedUser: ExtendedUser = {
+            ...session.user,
+            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            plan: 'free', // Default plan
+            avatarUrl: session.user.user_metadata?.avatar_url
+          };
+          setUser(extendedUser);
+          
+          // Store user data in localStorage for persistence
           localStorage.setItem('flyerflix-user', JSON.stringify({
+            ...extendedUser,
             id: session.user.id,
-            email: session.user.email,
-            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name
+            email: session.user.email
           }));
         } else {
+          setUser(null);
           localStorage.removeItem('flyerflix-user');
         }
+        
+        setLoading(false);
       }
     );
 
@@ -55,19 +78,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
       setSession(session);
-      setUser(session?.user ?? null);
       
       if (session?.user) {
+        const extendedUser: ExtendedUser = {
+          ...session.user,
+          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          plan: 'free',
+          avatarUrl: session.user.user_metadata?.avatar_url
+        };
+        setUser(extendedUser);
+        
         localStorage.setItem('flyerflix-user', JSON.stringify({
+          ...extendedUser,
           id: session.user.id,
-          email: session.user.email,
-          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name
+          email: session.user.email
         }));
       }
+      
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const login = async (email: string, password: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        toast.error('Erro ao fazer login: ' + error.message);
+        return { error };
+      }
+      
+      toast.success('Login realizado com sucesso!');
+      return { error: null };
+    } catch (error: any) {
+      console.error('Error during login:', error);
+      toast.error('Erro inesperado durante o login');
+      return { error };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const logout = async () => {
     try {
@@ -83,6 +139,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.error('Error during logout:', error);
       toast.error('Erro ao fazer logout: ' + error.message);
     }
+  };
+
+  const updateUser = (userData: Partial<ExtendedUser>) => {
+    if (user) {
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+    }
+  };
+
+  const isAdmin = () => {
+    // Check if user is admin based on email or metadata
+    return user?.email === 'admin@flyerflix.com' || user?.user_metadata?.role === 'admin';
   };
 
   const createCheckoutSession = async (): Promise<string | null> => {
@@ -136,6 +205,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       console.log('Subscription check result:', data);
+      
+      // Update user plan based on subscription status
+      if (data.isActive && user) {
+        updateUser({ plan: 'ultimate' });
+      }
     } catch (error: any) {
       console.error('Error in checkSubscription:', error);
     }
@@ -144,9 +218,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const value = {
     user,
     session,
+    loading,
     logout,
+    login,
     createCheckoutSession,
     checkSubscription,
+    updateUser,
+    isAdmin,
   };
 
   return (
