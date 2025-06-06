@@ -1,3 +1,4 @@
+
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
@@ -17,7 +18,7 @@ interface MemberLayoutProps {
 
 const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProps) => {
   const [showBanner, setShowBanner] = useState(false);
-  const [firstVisit, setFirstVisit] = useState(true);
+  const [firstVisit, setFirstVisit] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -25,13 +26,19 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const navigate = useNavigate();
   const location = useLocation();
   const { toast: uiToast } = useToast();
-  const { user, logout, createCheckoutSession, checkSubscription } = useAuth();
+  const { user, logout, createCheckoutSession, checkSubscription, loading } = useAuth();
   
   const isPlanFree = user?.plan === 'free';
   
   useEffect(() => {
-    if (!user) {
+    // Only redirect if we're done loading and there's no user
+    if (!loading && !user) {
       navigate('/login');
+      return;
+    }
+
+    // Don't do anything else if still loading or no user
+    if (loading || !user) {
       return;
     }
     
@@ -98,7 +105,24 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     return () => {
       window.removeEventListener('resize', checkIsMobile);
     };
-  }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription]);
+  }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription, loading]);
+  
+  // Show loading state while auth is loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-flyerflix-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-flyerflix-red mx-auto mb-4"></div>
+          <p>Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render anything if no user (will redirect)
+  if (!user) {
+    return null;
+  }
   
   const handleUpgrade = async () => {
     if (!user) return;

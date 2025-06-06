@@ -1,8 +1,8 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import { useNavigate } from 'react-router-dom';
 
 // Extended user interface with custom properties
 interface ExtendedUser extends User {
@@ -65,15 +65,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             id: session.user.id,
             email: session.user.email
           }));
-          
-          // Auto-redirect to dashboard after successful login
-          if (event === 'SIGNED_IN') {
-            console.log('User signed in, redirecting to dashboard...');
-            // Small delay to ensure state is updated
-            setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 100);
-          }
         } else {
           setUser(null);
           // Clear all user-specific data on logout
@@ -131,7 +122,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       toast.success('Login realizado com sucesso!');
-      // Redirection is handled by onAuthStateChange
       return { error: null };
     } catch (error: any) {
       console.error('Error during login:', error);

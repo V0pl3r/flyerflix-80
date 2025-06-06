@@ -27,8 +27,10 @@ const TemplateCard = ({
   onPreview
 }: TemplateCardProps) => {
   const [isHovering, setIsHovering] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
-  const isDesktop = window.innerWidth >= 1024; // Simple check for desktop
+  const isDesktop = window.innerWidth >= 1024;
   
   useEffect(() => {
     // Apply subtle entrance animation when the card first appears
@@ -38,7 +40,7 @@ const TemplateCard = ({
       setTimeout(() => {
         card.classList.remove('opacity-0', 'translate-y-4');
         card.classList.add('opacity-100', 'translate-y-0', 'transition-all', 'duration-500');
-      }, 100 + Math.random() * 300); // Staggered timing for grid of cards
+      }, 100 + Math.random() * 300);
     }
   }, []);
   
@@ -56,6 +58,20 @@ const TemplateCard = ({
     }
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    console.log('Template image failed to load:', template.imageUrl);
+    setImageError(true);
+    setImageLoaded(true);
+  };
+
+  // Fallback image URL
+  const fallbackImage = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=600&fit=crop';
+
   return (
     <div 
       ref={cardRef}
@@ -67,11 +83,22 @@ const TemplateCard = ({
       onMouseEnter={() => isDesktop && setIsHovering(true)}
       onMouseLeave={() => isDesktop && setIsHovering(false)}
     >
-      <div className="relative w-full aspect-[9/16]">
+      <div className="relative w-full aspect-[9/16] bg-gray-800">
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
+            <div className="text-white/50 text-sm">Carregando...</div>
+          </div>
+        )}
+        
         <img 
-          src={template.imageUrl} 
+          src={imageError ? fallbackImage : template.imageUrl} 
           alt={template.title}
-          className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
+          className={cn(
+            "w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]",
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          )}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
           loading="lazy"
         />
         
