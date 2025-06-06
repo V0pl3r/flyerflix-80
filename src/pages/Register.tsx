@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -19,7 +20,7 @@ const Register = () => {
   const [showPasswords, setShowPasswords] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   const logoRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
@@ -60,11 +61,54 @@ const Register = () => {
       planChoice: plan
     }));
   };
+
+  const createCheckoutSession = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+        },
+      });
+
+      if (error) {
+        console.error('Error creating checkout session:', error);
+        uiToast({
+          title: "Erro ao criar sessão de checkout",
+          description: error.message,
+          variant: "destructive",
+          className: "animate-slide-in-right"
+        });
+        return null;
+      }
+
+      if (data.url) {
+        return data.url;
+      } else {
+        uiToast({
+          title: "Erro ao criar sessão de checkout",
+          description: "URL de checkout não foi retornada",
+          variant: "destructive",
+          className: "animate-slide-in-right"
+        });
+        return null;
+      }
+    } catch (error: any) {
+      console.error('Error in createCheckoutSession:', error);
+      uiToast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro durante a criação da sessão de checkout. Tente novamente.",
+        variant: "destructive",
+        className: "animate-slide-in-right"
+      });
+      return null;
+    }
+  };
   
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
-      toast({
+      uiToast({
         title: "Erro ao criar conta",
         description: "As senhas não coincidem.",
         variant: "destructive",
@@ -74,7 +118,7 @@ const Register = () => {
     }
     
     if (!formData.acceptTerms) {
-      toast({
+      uiToast({
         title: "Erro ao criar conta",
         description: "Você precisa aceitar os termos de uso e política de privacidade.",
         variant: "destructive",
@@ -85,28 +129,86 @@ const Register = () => {
     
     setIsLoading(true);
 
-    // Mock registration
-    setTimeout(() => {
-      // Create user in localStorage
-      localStorage.setItem('flyerflix-user', JSON.stringify({
-        name: formData.name,
+    try {
+      // Criar conta com Supabase
+      const { data, error } = await supabase.auth.signUp({
         email: formData.email,
-        plan: formData.planChoice,
-        downloads: 0,
-        maxDownloads: formData.planChoice === 'ultimate' ? 'unlimited' : 2
-      }));
-      
-      toast({
-        title: "Conta criada com sucesso!",
-        description: formData.planChoice === 'ultimate' ? 
-          "Bem-vindo ao plano Ultimate da Flyerflix!" : 
-          "Sua conta gratuita foi criada com sucesso!",
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+            full_name: formData.name,
+          },
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      });
+
+      if (error) {
+        console.error('Error creating account:', error);
+        uiToast({
+          title: "Erro ao criar conta",
+          description: error.message,
+          variant: "destructive",
+          className: "animate-slide-in-right"
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user) {
+        // Se escolheu plano Ultimate, redirecionar para checkout
+        if (formData.planChoice === 'ultimate') {
+          uiToast({
+            title: "Conta criada!",
+            description: "Redirecionando para o pagamento...",
+            className: "animate-slide-in-right"
+          });
+
+          // Aguardar um pouco para garantir que a sessão está criada
+          setTimeout(async () => {
+            const checkoutUrl = await createCheckoutSession();
+            
+            if (checkoutUrl) {
+              // Abrir Stripe checkout em nova aba
+              window.open(checkoutUrl, '_blank');
+              uiToast({
+                title: "Abrindo checkout do Stripe...",
+                className: "animate-slide-in-right"
+              });
+              
+              // Redirecionar para dashboard após um delay
+              setTimeout(() => {
+                navigate('/dashboard');
+              }, 2000);
+            } else {
+              // Se falhou o checkout, ainda assim vai para dashboard com plano free
+              navigate('/dashboard');
+            }
+          }, 1000);
+        } else {
+          // Plano gratuito - ir direto para dashboard
+          uiToast({
+            title: "Conta criada com sucesso!",
+            description: "Sua conta gratuita foi criada com sucesso!",
+            className: "animate-slide-in-right"
+          });
+          
+          setTimeout(() => {
+            navigate('/dashboard');
+          }, 1000);
+        }
+      }
+    } catch (error: any) {
+      console.error('Unexpected error during registration:', error);
+      uiToast({
+        title: "Erro inesperado",
+        description: "Ocorreu um erro durante o registro. Tente novamente.",
+        variant: "destructive",
         className: "animate-slide-in-right"
       });
-      
+    } finally {
       setIsLoading(false);
-      navigate('/dashboard');
-    }, 1000);
+    }
   };
 
   return (
@@ -234,6 +336,11 @@ const Register = () => {
                 <div className="font-bold text-white mb-1">Plano Ultimate</div>
                 <div className="text-sm text-white/70">Downloads ilimitados</div>
                 <div className="text-lg font-medium text-white mt-2">R$23,90<span className="text-xs text-white/60">/mês</span></div>
+                {formData.planChoice === 'ultimate' && (
+                  <div className="text-xs text-flyerflix-red mt-1">
+                    Pagamento será processado após criar a conta
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -266,9 +373,11 @@ const Register = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Criando conta...
+                {formData.planChoice === 'ultimate' ? 'Criando conta e preparando pagamento...' : 'Criando conta...'}
               </span>
-            ) : 'Criar conta'}
+            ) : (
+              formData.planChoice === 'ultimate' ? 'Criar conta e pagar' : 'Criar conta'
+            )}
           </Button>
         </form>
         
