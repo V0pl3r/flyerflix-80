@@ -1,8 +1,8 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { useNavigate } from 'react-router-dom';
 
 // Extended user interface with custom properties
 interface ExtendedUser extends User {
@@ -59,15 +59,30 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           };
           setUser(extendedUser);
           
-          // Store user data in localStorage for persistence
-          localStorage.setItem('flyerflix-user', JSON.stringify({
+          // Store user data in localStorage for persistence with user isolation
+          localStorage.setItem(`flyerflix-user-${session.user.id}`, JSON.stringify({
             ...extendedUser,
             id: session.user.id,
             email: session.user.email
           }));
+          
+          // Auto-redirect to dashboard after successful login
+          if (event === 'SIGNED_IN') {
+            console.log('User signed in, redirecting to dashboard...');
+            // Small delay to ensure state is updated
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 100);
+          }
         } else {
           setUser(null);
-          localStorage.removeItem('flyerflix-user');
+          // Clear all user-specific data on logout
+          const keys = Object.keys(localStorage);
+          keys.forEach(key => {
+            if (key.startsWith('flyerflix-user-')) {
+              localStorage.removeItem(key);
+            }
+          });
         }
         
         setLoading(false);
@@ -88,7 +103,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         };
         setUser(extendedUser);
         
-        localStorage.setItem('flyerflix-user', JSON.stringify({
+        // Store with user-specific key for data isolation
+        localStorage.setItem(`flyerflix-user-${session.user.id}`, JSON.stringify({
           ...extendedUser,
           id: session.user.id,
           email: session.user.email
@@ -115,6 +131,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       toast.success('Login realizado com sucesso!');
+      // Redirection is handled by onAuthStateChange
       return { error: null };
     } catch (error: any) {
       console.error('Error during login:', error);
@@ -130,11 +147,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      localStorage.removeItem('flyerflix-user');
+      // Clear all user-specific data
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('flyerflix-user-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
       setUser(null);
       setSession(null);
       
       toast.success('Logout realizado com sucesso!');
+      
+      // Redirect to home page after logout
+      window.location.href = '/';
     } catch (error: any) {
       console.error('Error during logout:', error);
       toast.error('Erro ao fazer logout: ' + error.message);
@@ -145,7 +172,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+      // Update with user-specific key
+      localStorage.setItem(`flyerflix-user-${user.id}`, JSON.stringify(updatedUser));
     }
   };
 

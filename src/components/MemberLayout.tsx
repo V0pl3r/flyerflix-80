@@ -1,4 +1,3 @@
-
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
@@ -60,22 +59,24 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       navigate(location.pathname, { replace: true });
     }
     
-    // Show banner for free users on their first visit
-    if (isPlanFree && showWelcomeMessage) {
-      const hasSeenWelcome = localStorage.getItem('flyerflix-welcome-seen');
+    // Show banner for free users on their first visit - using user-specific storage
+    if (isPlanFree && showWelcomeMessage && user?.id) {
+      const hasSeenWelcome = localStorage.getItem(`flyerflix-welcome-seen-${user.id}`);
       if (!hasSeenWelcome) {
         setShowBanner(true);
-        localStorage.setItem('flyerflix-welcome-seen', 'true');
+        localStorage.setItem(`flyerflix-welcome-seen-${user.id}`, 'true');
       }
     }
     
-    // Check if this is first time viewing dashboard
-    const visitedDashboard = localStorage.getItem('flyerflix-visited-dashboard');
-    if (!visitedDashboard && showWelcomeMessage) {
-      setFirstVisit(true);
-      localStorage.setItem('flyerflix-visited-dashboard', 'true');
-    } else {
-      setFirstVisit(false);
+    // Check if this is first time viewing dashboard - using user-specific storage
+    if (user?.id) {
+      const visitedDashboard = localStorage.getItem(`flyerflix-visited-dashboard-${user.id}`);
+      if (!visitedDashboard && showWelcomeMessage) {
+        setFirstVisit(true);
+        localStorage.setItem(`flyerflix-visited-dashboard-${user.id}`, 'true');
+      } else {
+        setFirstVisit(false);
+      }
     }
     
     // Check if user is on mobile
@@ -118,6 +119,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     setShowProfileModal(true);
   };
 
+  // Display user-specific greeting
+  const userGreeting = user?.name || user?.email?.split('@')[0] || 'Usuário';
+
   return (
     <div className="min-h-screen bg-flyerflix-black text-white overflow-hidden">
       {/* Sidebar - Desktop */}
@@ -157,6 +161,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
           <div className="md:hidden font-bold text-flyerflix-red text-lg">FLYERFLIX</div>
           
           <div className="flex items-center space-x-4">
+            <span className="text-white/70 text-sm hidden md:block">
+              Olá, {userGreeting}
+            </span>
             <Button
               variant="ghost" 
               className="text-white/70 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"
@@ -212,9 +219,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
         {firstVisit && (
           <div className="px-4 md:px-6 py-4 bg-white/5 border-b border-white/10 animate-fade-in">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-xl font-bold">Bem-vindo à Flyerflix!</h2>
+              <h2 className="text-xl font-bold">Bem-vindo à Flyerflix, {userGreeting}!</h2>
               <p className="text-white/70 mt-1">
-                Explore nossa biblioteca de templates e comece a criar designs incríveis para seus eventos.
+                Esta é sua área pessoal. Explore nossa biblioteca de templates e comece a criar designs incríveis para seus eventos.
               </p>
             </div>
           </div>

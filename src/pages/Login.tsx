@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff } from 'lucide-react';
@@ -12,11 +11,19 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const { login, loading } = useAuth();
+  const { login, loading, user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const logoRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     // Animate elements on mount
@@ -52,7 +59,17 @@ const Login = () => {
         console.log('Attempting admin login...');
       }
       
-      await login(email, password);
+      const { error } = await login(email, password);
+      
+      if (error) {
+        setLoginError(error.message || 'Falha no login. Por favor, tente novamente.');
+        toast({
+          title: "Erro no login",
+          description: error.message || "Verifique suas credenciais e tente novamente.",
+          variant: "destructive",
+        });
+      }
+      // Redirect is handled automatically by useAuth hook
     } catch (error: any) {
       console.error('Login error in component:', error);
       setLoginError(error.message || 'Falha no login. Por favor, tente novamente.');
