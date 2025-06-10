@@ -46,6 +46,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/termos-de-uso" element={<TermsOfUse />} />
+            <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
+            
+            {/* Protected member routes */}
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/template/:id" element={<TemplateView />} />
             <Route path="/perfil" element={<Profile />} />
@@ -54,8 +58,6 @@ const App = () => (
             <Route path="/historico" element={<History />} />
             <Route path="/configuracoes" element={<Settings />} />
             <Route path="/area-membro" element={<Dashboard />} />
-            <Route path="/termos-de-uso" element={<TermsOfUse />} />
-            <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
             
             {/* Admin Routes - Protected by AdminRouteGuard */}
             <Route 
