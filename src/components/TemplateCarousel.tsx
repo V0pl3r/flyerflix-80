@@ -40,18 +40,27 @@ const TemplateCarousel = ({
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
   const [currentPosition, setCurrentPosition] = useState(0);
-  const [totalSlides, setTotalSlides] = useState(0);
+  const [totalSlides, setTotalSlides] = useState(1);
   const [imagesLoaded, setImagesLoaded] = useState(0);
   const [isExpanded, setIsExpanded] = useState(true);
   const totalImages = templates.length;
 
   useEffect(() => {
-    // Calculate total number of slides
-    if (carouselRef.current) {
+    // Calculate total number of slides with proper validation
+    if (carouselRef.current && templates.length > 0) {
       const containerWidth = carouselRef.current.clientWidth;
       const itemWidth = 220; // Approximate width of each item with margin
-      const visibleItems = Math.floor(containerWidth / itemWidth);
-      setTotalSlides(Math.max(1, Math.ceil(templates.length / visibleItems)));
+      
+      // Ensure we don't divide by zero and have a minimum of 1 visible item
+      const visibleItems = Math.max(1, Math.floor(containerWidth / itemWidth));
+      const calculatedSlides = Math.ceil(templates.length / visibleItems);
+      
+      // Ensure totalSlides is always a valid positive integer
+      const validSlides = Math.max(1, Math.min(calculatedSlides, templates.length));
+      setTotalSlides(validSlides);
+    } else {
+      // Default to 1 slide if no templates or no container
+      setTotalSlides(1);
     }
     
     // Check arrows on initial load
@@ -60,7 +69,7 @@ const TemplateCarousel = ({
     // Add resize listener
     window.addEventListener('resize', checkArrows);
     return () => window.removeEventListener('resize', checkArrows);
-  }, [templates]);
+  }, [templates.length]);
 
   // Reset image loaded count when templates change
   useEffect(() => {
@@ -240,10 +249,10 @@ const TemplateCarousel = ({
             </button>
           )}
           
-          {/* Carousel indicators */}
-          {totalSlides > 1 && (
+          {/* Carousel indicators - Fixed with proper validation */}
+          {totalSlides > 1 && Number.isFinite(totalSlides) && totalSlides <= 100 && (
             <div className="flex justify-center space-x-1 mt-2">
-              {[...Array(totalSlides)].map((_, index) => (
+              {Array.from({ length: totalSlides }, (_, index) => (
                 <div 
                   key={index}
                   className={`h-1 rounded-full transition-all ${
