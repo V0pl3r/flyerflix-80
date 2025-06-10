@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/components/ui/sonner';
 import WelcomeModal from './WelcomeModal';
 import ProfileModal from './ProfileModal';
+import { getUserData, setUserData, hasUserData } from '@/utils/userStorage';
 
 interface MemberLayoutProps {
   children: ReactNode;
@@ -72,20 +73,20 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       navigate(location.pathname, { replace: true });
     }
     
-    // Show banner for free users on their first visit
+    // Show banner for free users on their first visit using user-specific storage
     if (isPlanFree && showWelcomeMessage) {
-      const hasSeenWelcome = localStorage.getItem('flyerflix-welcome-seen');
+      const hasSeenWelcome = hasUserData('flyerflix-welcome-seen');
       if (!hasSeenWelcome) {
         setShowBanner(true);
-        localStorage.setItem('flyerflix-welcome-seen', 'true');
+        setUserData('flyerflix-welcome-seen', 'true');
       }
     }
     
-    // Check if this is first time viewing dashboard
-    const visitedDashboard = localStorage.getItem('flyerflix-visited-dashboard');
+    // Check if this is first time viewing dashboard using user-specific storage
+    const visitedDashboard = hasUserData('flyerflix-visited-dashboard');
     if (!visitedDashboard && showWelcomeMessage) {
       setFirstVisit(true);
-      localStorage.setItem('flyerflix-visited-dashboard', 'true');
+      setUserData('flyerflix-visited-dashboard', 'true');
     } else {
       setFirstVisit(false);
     }

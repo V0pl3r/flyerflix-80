@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,19 +18,7 @@ import History from "./pages/History";
 import TermsOfUse from "./pages/TermsOfUse";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TemplateView from "./pages/TemplateView";
-
-// Admin imports
-import AdminLayout from "./pages/admin/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminTemplates from "./pages/admin/AdminTemplates";
-import AdminCategories from "./pages/admin/AdminCategories";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminSubscriptions from "./pages/admin/AdminSubscriptions";
-import AdminFinancial from "./pages/admin/AdminFinancial";
-import AdminReports from "./pages/admin/AdminReports";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminSupport from "./pages/admin/AdminSupport";
-import AdminPlans from "./pages/admin/AdminPlans";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -50,14 +37,14 @@ const App = () => (
             <Route path="/politica-de-privacidade" element={<PrivacyPolicy />} />
             
             {/* Protected member routes */}
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/template/:id" element={<TemplateView />} />
-            <Route path="/perfil" element={<Profile />} />
-            <Route path="/meus-downloads" element={<Downloads />} />
-            <Route path="/favoritos" element={<Favorites />} />
-            <Route path="/historico" element={<History />} />
-            <Route path="/configuracoes" element={<Settings />} />
-            <Route path="/area-membro" element={<Dashboard />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/template/:id" element={<ProtectedRoute><TemplateView /></ProtectedRoute>} />
+            <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/meus-downloads" element={<ProtectedRoute><Downloads /></ProtectedRoute>} />
+            <Route path="/favoritos" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+            <Route path="/historico" element={<ProtectedRoute><History /></ProtectedRoute>} />
+            <Route path="/configuracoes" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/area-membro" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             
             {/* Admin Routes - Protected by AdminRouteGuard */}
             <Route 

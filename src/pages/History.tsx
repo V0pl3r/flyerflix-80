@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, Heart, Eye, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getUserData, setUserData } from '@/utils/userStorage';
+import { useAuth } from '@/hooks/useAuth';
 
 type HistoryItemType = 'download' | 'view' | 'favorite';
 
@@ -56,30 +58,32 @@ const History = () => {
   const [filterType, setFilterType] = useState<HistoryItemType | 'all'>('all');
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   useEffect(() => {
     // Check authentication
-    const userData = localStorage.getItem('flyerflix-user');
-    if (!userData) {
+    if (!user) {
       navigate('/login');
       return;
     }
     
-    // Load history from localStorage
-    const storedHistory = localStorage.getItem('flyerflix-history');
+    // Load history from user-specific localStorage
+    const storedHistory = getUserData('flyerflix-history');
     if (storedHistory) {
-      setHistory(JSON.parse(storedHistory));
-      setFilteredHistory(JSON.parse(storedHistory));
+      setHistory(storedHistory);
+      setFilteredHistory(storedHistory);
     } else {
       // Use mock data if no history exists (for demo purposes)
       setHistory(mockHistory);
       setFilteredHistory(mockHistory);
+      // Save mock data for this user
+      setUserData('flyerflix-history', mockHistory);
     }
     
     setTimeout(() => {
       setIsLoading(false);
     }, 500);
-  }, [navigate]);
+  }, [navigate, user]);
   
   // Filter history by type
   useEffect(() => {
