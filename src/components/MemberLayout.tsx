@@ -30,19 +30,6 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   
   const isPlanFree = user?.plan === 'free';
   
-  // Show loading while auth is initializing
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-flyerflix-black flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-flyerflix-red text-3xl font-bold mb-4">FLYERFLIX</h1>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-flyerflix-red mx-auto"></div>
-          <p className="text-white/60 mt-4">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-  
   useEffect(() => {
     if (!user) {
       navigate('/login');
@@ -136,6 +123,19 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   const openProfileModal = () => {
     setShowProfileModal(true);
   };
+
+  // Show loading while auth is initializing
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-flyerflix-black flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-flyerflix-red text-3xl font-bold mb-4">FLYERFLIX</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-flyerflix-red mx-auto"></div>
+          <p className="text-white/60 mt-4">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Don't render layout if user is not authenticated
   if (!user) {
