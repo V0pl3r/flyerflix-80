@@ -1,3 +1,4 @@
+
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
@@ -71,6 +72,10 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       // Remove the query parameter
       navigate(location.pathname, { replace: true });
     }
+  }, [user, location.search, navigate, location.pathname, checkSubscription]);
+  
+  useEffect(() => {
+    if (!user) return;
     
     // Show banner for free users on their first visit
     if (isPlanFree && showWelcomeMessage) {
@@ -89,7 +94,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     } else {
       setFirstVisit(false);
     }
-    
+  }, [user, isPlanFree, showWelcomeMessage]);
+  
+  useEffect(() => {
     // Check if user is on mobile
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
@@ -102,14 +109,15 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
     window.addEventListener('resize', checkIsMobile);
     
     // Set page as loaded after a short delay for animations
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setIsPageLoaded(true);
     }, 100);
     
     return () => {
       window.removeEventListener('resize', checkIsMobile);
+      clearTimeout(timer);
     };
-  }, [navigate, showWelcomeMessage, isPlanFree, user, location, checkSubscription, loading]);
+  }, []);
   
   const handleUpgrade = async () => {
     if (!user) return;
