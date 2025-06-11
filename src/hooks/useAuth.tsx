@@ -1,8 +1,8 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import { useNavigate } from 'react-router-dom';
 
 // Extended user interface with custom properties
 interface ExtendedUser extends User {
@@ -59,30 +59,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           };
           setUser(extendedUser);
           
-          // Store user data in localStorage with user ID prefix
-          const userKey = `flyerflix-user-${session.user.id}`;
-          localStorage.setItem(userKey, JSON.stringify({
+          // Store user data in localStorage for persistence
+          localStorage.setItem('flyerflix-user', JSON.stringify({
             ...extendedUser,
             id: session.user.id,
             email: session.user.email
           }));
-          
-          // Set current user ID for data isolation
-          localStorage.setItem('flyerflix-current-user', session.user.id);
         } else {
           setUser(null);
-          // Clear current user and all user-specific data
-          const currentUserId = localStorage.getItem('flyerflix-current-user');
-          if (currentUserId) {
-            // Clear user-specific data
-            localStorage.removeItem(`flyerflix-user-${currentUserId}`);
-            localStorage.removeItem(`flyerflix-history-${currentUserId}`);
-            localStorage.removeItem(`flyerflix-favorites-${currentUserId}`);
-            localStorage.removeItem(`flyerflix-downloads-${currentUserId}`);
-            localStorage.removeItem(`flyerflix-welcome-seen-${currentUserId}`);
-            localStorage.removeItem(`flyerflix-visited-dashboard-${currentUserId}`);
-          }
-          localStorage.removeItem('flyerflix-current-user');
+          localStorage.removeItem('flyerflix-user');
         }
         
         setLoading(false);
@@ -103,14 +88,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         };
         setUser(extendedUser);
         
-        const userKey = `flyerflix-user-${session.user.id}`;
-        localStorage.setItem(userKey, JSON.stringify({
+        localStorage.setItem('flyerflix-user', JSON.stringify({
           ...extendedUser,
           id: session.user.id,
           email: session.user.email
         }));
-        
-        localStorage.setItem('flyerflix-current-user', session.user.id);
       }
       
       setLoading(false);
@@ -133,17 +115,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
       
       toast.success('Login realizado com sucesso!');
-      
-      // Auto-redirect after successful login
-      setTimeout(() => {
-        // Check if user is admin and redirect accordingly
-        if (email === 'admin@flyerflix.com') {
-          window.location.href = '/admin';
-        } else {
-          window.location.href = '/dashboard';
-        }
-      }, 1000);
-      
       return { error: null };
     } catch (error: any) {
       console.error('Error during login:', error);
@@ -159,14 +130,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      // Clear all user data will be handled by the auth state change
+      localStorage.removeItem('flyerflix-user');
       setUser(null);
       setSession(null);
       
       toast.success('Logout realizado com sucesso!');
-      
-      // Redirect to home page
-      window.location.href = '/';
     } catch (error: any) {
       console.error('Error during logout:', error);
       toast.error('Erro ao fazer logout: ' + error.message);
@@ -177,9 +145,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      
-      const userKey = `flyerflix-user-${user.id}`;
-      localStorage.setItem(userKey, JSON.stringify(updatedUser));
+      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
     }
   };
 
@@ -267,5 +233,3 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     </AuthContext.Provider>
   );
 };
-
-export default AuthProvider;
