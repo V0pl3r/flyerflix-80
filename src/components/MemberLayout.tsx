@@ -143,9 +143,9 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   }
 
   return (
-    <div className="min-h-screen bg-flyerflix-black text-white overflow-hidden">
-      {/* Sidebar - Desktop */}
-      {!isMobile && <MemberSidebar />}
+    <div className="min-h-screen bg-flyerflix-black text-white">
+      {/* Sidebar - Always render for desktop */}
+      <MemberSidebar />
       
       {/* Welcome Modal */}
       {showWelcomeMessage && user && <WelcomeModal userName={user.name || undefined} />}
@@ -156,7 +156,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       {/* Main Content */}
       <div 
         className={`
-          ${!isMobile ? "ml-16 md:ml-64" : ""} 
+          md:ml-64 
           min-h-screen 
           transition-all duration-500 ease-in-out
           ${isPageLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
@@ -164,8 +164,8 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
       >
         {/* Top navigation bar */}
         <header className="bg-[#0b0b0b]/90 backdrop-blur-sm border-b border-white/10 h-16 flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 animate-slide-in-down">
-          {/* Mobile menu */}
-          {isMobile && (
+          {/* Mobile menu - only visible on mobile */}
+          <div className="md:hidden">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-white transition-transform active:scale-90">
@@ -176,7 +176,7 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
                 <MemberSidebar isMobileDrawer />
               </SheetContent>
             </Sheet>
-          )}
+          </div>
           
           <div className="md:hidden font-bold text-flyerflix-red text-lg">FLYERFLIX</div>
           
