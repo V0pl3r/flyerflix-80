@@ -109,17 +109,18 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
         )}
         
         {(!collapsed || isMobileDrawer) && user.plan === 'free' && (
-          <div className="mt-3">
-            <div className="flex justify-between text-xs text-white/70 mb-1">
-              <span>Downloads hoje</span>
-              <span>
-                {user.downloads}/{user.maxDownloads}
-              </span>
+          <div className="mt-3 relative">
+            {/* Badge lateral acima da barra */}
+            <div className="absolute -top-2 right-0 bg-flyerflix-red px-2 py-0.5 rounded-full text-xs text-white font-bold z-10 shadow-md">
+              {user.downloads} de {user.maxDownloads}
             </div>
-            <div
-              className="h-[4px] w-full bg-black"
-              style={{ borderRadius: 0 }}
-            >
+            {/* Área de valores extremos */}
+            <div className="flex justify-between text-xs text-white/70 mb-1">
+              <span>0</span>
+              <span>{user.maxDownloads}</span>
+            </div>
+            {/* Barra preta fina, quadrada */}
+            <div className="h-[4px] w-full bg-black relative" style={{ borderRadius: 0 }}>
               <div
                 className="h-full bg-flyerflix-red transition-all"
                 style={{
@@ -129,7 +130,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
                   )}%`,
                   borderRadius: 0,
                 }}
-              ></div>
+              />
             </div>
           </div>
         )}
