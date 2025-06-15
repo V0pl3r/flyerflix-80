@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,6 +109,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
       
       if (error) {
+        console.error('Login error:', error);
         toast.error('Erro ao fazer login: ' + error.message);
         return { error };
       }
