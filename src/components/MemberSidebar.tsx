@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -153,9 +152,9 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
           </li>
           <li>
             <Link 
-              to="/configuracoes" 
+              to="/perfil" 
               className={`flex items-center px-3 py-2 rounded-lg transition ${
-                isActive('/configuracoes')
+                isActive('/perfil')
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
