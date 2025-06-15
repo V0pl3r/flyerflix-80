@@ -91,16 +91,17 @@ const Profile = () => {
       return;
     }
 
-    console.log('📁 Arquivo válido encontrado:', {
+    console.log('📁 Arquivo selecionado:', {
       name: file.name,
       size: file.size,
       type: file.type
     });
 
+    // Validações
     if (file.size > MAX_FILE_SIZE) {
       console.warn('❌ Arquivo muito grande:', file.size);
       toast({
-        title: "Erro ao fazer upload",
+        title: "Erro no upload",
         description: "O tamanho máximo permitido é 2MB.",
         variant: "destructive"
       });
@@ -110,107 +111,108 @@ const Profile = () => {
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       console.warn('❌ Tipo de arquivo não suportado:', file.type);
       toast({
-        title: "Erro ao fazer upload",
+        title: "Erro no upload",
         description: "Formato não suportado. Use JPG, PNG ou WebP.",
         variant: "destructive"
       });
       return;
     }
 
-    if (!user) {
-      console.error('❌ Usuário não encontrado no contexto.');
+    if (!user?.id) {
+      console.error('❌ ID do usuário não encontrado');
       toast({
-        title: "Falha de Usuário",
-        description: "Não foi possível encontrar suas informações. Faça login novamente.",
+        title: "Erro de autenticação",
+        description: "Faça login novamente.",
         variant: "destructive"
       });
       return;
     }
 
-    console.log('👤 Usuário encontrado:', { id: user.id, name: user.name });
-
     setIsUploadingAvatar(true);
 
     try {
-      // Nome único pro arquivo (userId/timestamp.ext)
+      // Gerar nome único para o arquivo
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      
+      console.log('📤 Fazendo upload para:', fileName);
 
-      console.log('📤 Fazendo upload para:', filePath);
-
-      const { error: uploadError } = await supabase.storage
+      // Upload para o Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type
+        });
 
       if (uploadError) {
-        console.error('❌ Erro no upload para Supabase:', uploadError);
-        toast({
-          title: "Erro ao enviar imagem",
-          description: uploadError.message || "Ocorreu um erro ao enviar a imagem.",
-          variant: "destructive"
-        });
-        return;
+        console.error('❌ Erro no upload:', uploadError);
+        throw new Error(`Erro no upload: ${uploadError.message}`);
       }
 
-      console.log('✅ Upload concluído com sucesso!');
+      console.log('✅ Upload concluído:', uploadData);
 
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      console.log('🔗 URL pública do avatar:', data?.publicUrl);
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
 
-      const avatarUrl = data?.publicUrl;
+      const avatarUrl = urlData?.publicUrl;
+      console.log('🔗 URL do avatar:', avatarUrl);
 
       if (!avatarUrl) {
-        throw new Error('URL pública do Supabase não encontrada!');
+        throw new Error('Não foi possível obter a URL da imagem');
       }
 
-      // Atualizar o estado local imediatamente para feedback visual
+      // Atualizar interface imediatamente
       setUploadedImage(avatarUrl);
 
-      console.log('💾 Salvando no banco de dados...');
-      console.log('Dados a serem salvos:', { id: user.id, avatar_url: avatarUrl });
+      console.log('💾 Atualizando perfil no banco...');
       
-      const updated = await updateUserProfile({ 
-        id: user.id, 
-        avatar_url: avatarUrl 
-      });
-      
-      console.log('📊 Resultado da atualização do perfil:', updated);
-      
-      if (!updated) {
-        console.error('❌ Falha ao atualizar perfil no banco de dados');
-        // Reverter o estado local se falhou no banco
-        setUploadedImage(user.avatarUrl || null);
-        toast({
-          title: "Erro ao salvar foto de perfil",
-          description: "A imagem foi enviada mas não foi possível salvar no perfil. Tente novamente.",
-          variant: "destructive"
-        });
-        return;
+      // Tentar atualizar o perfil diretamente via Supabase
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar perfil:', updateError);
+        throw new Error(`Erro ao salvar: ${updateError.message}`);
       }
 
-      console.log('✅ Perfil atualizado com sucesso no banco!');
+      console.log('✅ Perfil atualizado:', updateData);
 
-      // Atualizar o contexto do useAuth
+      // Atualizar contexto do usuário
       updateUser({ avatarUrl });
 
-      console.log('✅ Estado local atualizado!');
-
       toast({
-        title: "Imagem atualizada",
-        description: "Sua foto de perfil foi alterada com sucesso."
+        title: "Sucesso!",
+        description: "Foto de perfil atualizada com sucesso."
       });
-    } catch (err: any) {
-      console.error('❌ Erro inesperado no upload:', err);
-      // Reverter o estado local em caso de erro
+
+    } catch (error: any) {
+      console.error('❌ Erro no processo:', error);
+      
+      // Reverter imagem na interface em caso de erro
       setUploadedImage(user.avatarUrl || null);
+      
       toast({
-        title: "Falha inesperada no upload",
-        description: err?.message || "Erro desconhecido.",
+        title: "Erro ao salvar foto de perfil",
+        description: error.message || "Tente novamente.",
         variant: "destructive"
       });
     } finally {
       setIsUploadingAvatar(false);
+      
+      // Limpar o input para permitir reenvio do mesmo arquivo
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -315,6 +317,10 @@ const Profile = () => {
                           src={uploadedImage} 
                           alt={user.name || 'Avatar'} 
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('❌ Erro ao carregar imagem:', uploadedImage);
+                            setUploadedImage(null);
+                          }}
                         />
                       ) : (
                         <User size={64} className="text-flyerflix-red opacity-70" />
