@@ -29,28 +29,28 @@ const FeaturedTemplate = ({ template, onUseNow }: FeaturedTemplateProps) => {
   const fallbackImage = 'https://images.unsplash.com/photo-1518770660439-4636190af475';
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden relative mb-8 min-h-[340px] md:min-h-[400px] lg:min-h-[480px] transition-all">
+    <div className="w-full rounded-3xl overflow-hidden relative mb-8 min-h-[340px] md:min-h-[400px] lg:min-h-[480px] transition-all">
       {/* Background image sem blur, 100% visível */}
-      <div className="absolute inset-0 z-0 rounded-2xl overflow-hidden">
+      <div className="absolute inset-0 z-0 rounded-3xl overflow-hidden">
         <img
           src={newBgImage}
           alt="Destaque Flyerflix"
-          className="w-full h-full object-cover object-center rounded-2xl"
+          className="w-full h-full object-cover object-center rounded-3xl"
           style={{ objectFit: 'cover', width: '100%', height: '100%' }}
         />
         {/* Gradient para legibilidade, apenas embaixo e à esquerda */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/20 to-black/5 rounded-2xl" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-2xl" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/20 to-black/5 rounded-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent rounded-3xl" />
       </div>
 
       {/* Content */}
       <div className="relative z-20 flex flex-col md:flex-row items-center p-6 md:p-8 lg:p-12 h-full">
         {/* Template thumbnail */}
-        <div className="w-36 md:w-48 lg:w-64 flex-shrink-0 mb-6 md:mb-0 rounded-2xl overflow-hidden shadow-2xl bg-gray-800 transition-all">
+        <div className="w-36 md:w-48 lg:w-64 flex-shrink-0 mb-6 md:mb-0 rounded-3xl overflow-hidden shadow-2xl bg-gray-800 transition-all">
           <img 
             src={thumbnailError ? fallbackImage : template.imageUrl} 
             alt={template.title} 
-            className="w-full aspect-[9/16] object-cover rounded-2xl" 
+            className="w-full aspect-[9/16] object-cover rounded-3xl" 
             onError={handleThumbnailError}
             loading="lazy"
           />
