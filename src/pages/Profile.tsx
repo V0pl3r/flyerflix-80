@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
@@ -18,6 +17,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { LogOut, User, Infinity, Upload, Camera, Eye, EyeOff, History, Lock, Bell, Globe } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { supabase } from '@/integrations/supabase/client';
+import { updateUserProfile } from '@/models/UserProfile';
 
 type UserType = {
   name: string;
@@ -94,12 +95,12 @@ const Profile = () => {
     });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    
+
     if (!file) return;
-    
-    // Validate file size
+
+    // Validação de tipo e tamanho, igual ao original
     if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "Erro ao fazer upload",
@@ -108,8 +109,7 @@ const Profile = () => {
       });
       return;
     }
-    
-    // Validate file type
+
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       toast({
         title: "Erro ao fazer upload",
@@ -118,26 +118,54 @@ const Profile = () => {
       });
       return;
     }
-    
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const imageUrl = event.target?.result as string;
-      setUploadedImage(imageUrl);
-      
-      // Update user data
-      if (user) {
-        const updatedUser = { ...user, avatarUrl: imageUrl };
-        setUser(updatedUser);
-        localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
-      }
-      
+
+    if (!user) return;
+
+    // Nome único pro arquivo (userId/timestamp.ext)
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    // Faz upload no Supabase Storage
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) {
       toast({
-        title: "Imagem atualizada",
-        description: "Sua foto de perfil foi alterada com sucesso."
+        title: "Erro ao enviar imagem",
+        description: "Ocorreu um erro ao enviar a imagem.",
+        variant: "destructive"
       });
-    };
-    
-    reader.readAsDataURL(file);
+      return;
+    }
+
+    // Obtem URL pública do avatar
+    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+    const avatarUrl = data.publicUrl;
+
+    // Atualiza tabela profiles
+    const updated = await updateUserProfile({ id: user.id, avatar_url: avatarUrl });
+    if (!updated) {
+      toast({
+        title: "Erro ao salvar foto de perfil",
+        description: "Tente novamente.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setUploadedImage(avatarUrl);
+
+    // Atualiza state e localStorage
+    const updatedUser = { ...user, avatarUrl };
+    setUser(updatedUser);
+    localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+
+    toast({
+      title: "Imagem atualizada",
+      description: "Sua foto de perfil foi alterada com sucesso."
+    });
   };
 
   const onSubmit = (data: ProfileFormData) => {
