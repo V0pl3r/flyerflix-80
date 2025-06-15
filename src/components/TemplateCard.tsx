@@ -29,7 +29,11 @@ const TemplateCard = ({
   const [isHovering, setIsHovering] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   const isDesktop = window.innerWidth >= 1024; // Simple check for desktop
-  
+
+  // Fallback image if imageUrl is missing/invalid
+  const fallbackImage = 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=400&h=700';
+  const templateImage = template.imageUrl && template.imageUrl.trim() !== '' ? template.imageUrl : fallbackImage;
+
   useEffect(() => {
     // Apply subtle entrance animation when the card first appears
     const card = cardRef.current;
@@ -56,6 +60,11 @@ const TemplateCard = ({
     }
   };
 
+  const handleClick = () => {
+    console.log('Template clicado:', template.title, template.id);
+    onClick();
+  };
+
   return (
     <div 
       ref={cardRef}
@@ -63,13 +72,13 @@ const TemplateCard = ({
         "template-card group relative cursor-pointer transition-all duration-300 rounded-lg overflow-hidden shadow-md hover:shadow-xl hover:scale-[1.03]",
         className
       )}
-      onClick={onClick}
+      onClick={handleClick}
       onMouseEnter={() => isDesktop && setIsHovering(true)}
       onMouseLeave={() => isDesktop && setIsHovering(false)}
     >
       <div className="relative w-full aspect-[9/16]">
         <img 
-          src={template.imageUrl} 
+          src={templateImage} 
           alt={template.title}
           className="w-full h-full object-cover transition-all duration-500 group-hover:scale-[1.03]"
           loading="lazy"
@@ -155,3 +164,4 @@ const TemplateCard = ({
 };
 
 export default TemplateCard;
+
