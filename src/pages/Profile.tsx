@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
@@ -34,6 +35,7 @@ const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'
 
 const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -82,16 +84,10 @@ const Profile = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🔄 Iniciando upload de imagem...');
-    console.log('Arquivo selecionado:', e.target.files?.[0]);
     const file = e.target.files?.[0];
 
     if (!file) {
       console.warn('❌ Nenhum arquivo selecionado.');
-      toast({
-        title: "Nenhum arquivo selecionado",
-        description: "Por favor, selecione uma imagem para enviar.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -122,7 +118,7 @@ const Profile = () => {
     }
 
     if (!user) {
-      console.error('❌ Usuário não encontrado no contexto/localStorage.');
+      console.error('❌ Usuário não encontrado no contexto.');
       toast({
         title: "Falha de Usuário",
         description: "Não foi possível encontrar suas informações. Faça login novamente.",
@@ -132,6 +128,8 @@ const Profile = () => {
     }
 
     console.log('👤 Usuário encontrado:', { id: user.id, name: user.name });
+
+    setIsUploadingAvatar(true);
 
     try {
       // Nome único pro arquivo (userId/timestamp.ext)
@@ -166,25 +164,32 @@ const Profile = () => {
         throw new Error('URL pública do Supabase não encontrada!');
       }
 
-      console.log('💾 Tentando salvar no banco de dados...');
+      // Atualizar o estado local imediatamente para feedback visual
+      setUploadedImage(avatarUrl);
+
+      console.log('💾 Salvando no banco de dados...');
       console.log('Dados a serem salvos:', { id: user.id, avatar_url: avatarUrl });
       
-      const updated = await updateUserProfile({ id: user.id, avatar_url: avatarUrl });
+      const updated = await updateUserProfile({ 
+        id: user.id, 
+        avatar_url: avatarUrl 
+      });
+      
       console.log('📊 Resultado da atualização do perfil:', updated);
       
       if (!updated) {
         console.error('❌ Falha ao atualizar perfil no banco de dados');
+        // Reverter o estado local se falhou no banco
+        setUploadedImage(user.avatarUrl || null);
         toast({
           title: "Erro ao salvar foto de perfil",
-          description: "Tente novamente.",
+          description: "A imagem foi enviada mas não foi possível salvar no perfil. Tente novamente.",
           variant: "destructive"
         });
         return;
       }
 
       console.log('✅ Perfil atualizado com sucesso no banco!');
-
-      setUploadedImage(avatarUrl);
 
       // Atualizar o contexto do useAuth
       updateUser({ avatarUrl });
@@ -197,11 +202,15 @@ const Profile = () => {
       });
     } catch (err: any) {
       console.error('❌ Erro inesperado no upload:', err);
+      // Reverter o estado local em caso de erro
+      setUploadedImage(user.avatarUrl || null);
       toast({
         title: "Falha inesperada no upload",
         description: err?.message || "Erro desconhecido.",
         variant: "destructive"
       });
+    } finally {
+      setIsUploadingAvatar(false);
     }
   };
 
@@ -311,12 +320,19 @@ const Profile = () => {
                         <User size={64} className="text-flyerflix-red opacity-70" />
                       )}
                     </div>
-                    <div 
-                      className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Camera size={32} className="text-white" />
-                    </div>
+                    {!isUploadingAvatar && (
+                      <div 
+                        className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Camera size={32} className="text-white" />
+                      </div>
+                    )}
+                    {isUploadingAvatar && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                      </div>
+                    )}
                   </div>
                   
                   <input 
@@ -325,15 +341,17 @@ const Profile = () => {
                     accept=".jpg,.jpeg,.png,.webp"
                     className="hidden"
                     onChange={handleImageUpload}
+                    disabled={isUploadingAvatar}
                   />
                   
                   <Button 
                     variant="outline" 
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full flex items-center gap-2"
+                    disabled={isUploadingAvatar}
                   >
                     <Upload size={16} />
-                    Fazer Upload
+                    {isUploadingAvatar ? 'Enviando...' : 'Fazer Upload'}
                   </Button>
                   
                   <p className="text-xs text-white/60 mt-3 text-center">
