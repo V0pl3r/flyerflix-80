@@ -112,13 +112,22 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
           <div className="mt-3">
             <div className="flex justify-between text-xs text-white/70 mb-1">
               <span>Downloads hoje</span>
-              <span>{user.downloads}/{user.maxDownloads}</span>
+              <span>
+                {user.downloads}/{user.maxDownloads}
+              </span>
             </div>
-            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-flyerflix-red"
-                style={{ 
-                  width: `${Math.min((user.downloads / (user.maxDownloads as number)) * 100, 100)}%` 
+            <div
+              className="h-[4px] w-full bg-black"
+              style={{ borderRadius: 0 }}
+            >
+              <div
+                className="h-full bg-flyerflix-red transition-all"
+                style={{
+                  width: `${Math.min(
+                    (user.downloads / (user.maxDownloads as number)) * 100,
+                    100
+                  )}%`,
+                  borderRadius: 0,
                 }}
               ></div>
             </div>
