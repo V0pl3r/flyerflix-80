@@ -83,8 +83,7 @@ const Profile = () => {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🔄 Iniciando upload de imagem...');
     const file = e.target.files?.[0];
-    console.log('Arquivo selecionado:', file);
-
+    
     if (!file) {
       console.warn('❌ Nenhum arquivo selecionado.');
       toast({
@@ -131,16 +130,15 @@ const Profile = () => {
       return;
     }
 
-    console.log('👤 Usuário encontrado:', { id: user.id, name: user.name });
-
     try {
-      // Nome único pro arquivo (userId/timestamp.ext)
+      setIsLoading(true);
+      
+      // 1. Upload da imagem
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       console.log('📤 Fazendo upload para:', fileName);
 
-      // Upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { 
@@ -149,103 +147,62 @@ const Profile = () => {
         });
 
       if (uploadError) {
-        console.error('❌ Erro no upload para Supabase:', uploadError);
-        toast({
-          title: "Erro ao enviar imagem",
-          description: uploadError.message || "Ocorreu um erro ao enviar a imagem.",
-          variant: "destructive"
-        });
-        return;
+        console.error('❌ Erro no upload:', uploadError);
+        throw uploadError;
       }
 
       console.log('✅ Upload concluído com sucesso!');
 
-      // Obter URL pública
+      // 2. Obter URL pública
       const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
       const avatarUrl = data?.publicUrl;
 
       if (!avatarUrl) {
         console.error('❌ URL pública não encontrada');
-        toast({
-          title: "Erro ao obter URL da imagem",
-          description: "Não foi possível obter a URL pública da imagem.",
-          variant: "destructive"
-        });
-        return;
+        throw new Error('Não foi possível obter a URL pública da imagem');
       }
 
-      console.log('🔗 URL pública do avatar:', avatarUrl);
+      console.log('🔗 URL pública obtida:', avatarUrl);
 
-      // Aguardar um pouco antes de tentar salvar
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // 3. Atualizar imediatamente no estado local primeiro (UI responsiva)
+      setUploadedImage(avatarUrl);
 
-      console.log('💾 Tentando salvar no banco de dados...');
-      console.log('📝 Dados para salvar:', { id: user.id, avatar_url: avatarUrl });
-      
-      // Usar uma tentativa mais robusta para salvar
-      try {
-        const updated = await updateUserProfile({ 
-          id: user.id, 
-          avatar_url: avatarUrl 
-        });
-        
-        console.log('📊 Resultado da atualização:', updated);
-        
-        if (updated) {
-          console.log('✅ Perfil atualizado com sucesso no banco!');
-          
-          // Atualizar estado local
-          setUploadedImage(avatarUrl);
-          updateUser({ avatarUrl });
-          
-          toast({
-            title: "Imagem atualizada",
-            description: "Sua foto de perfil foi alterada com sucesso."
-          });
-        } else {
-          throw new Error('Nenhum dado retornado da atualização');
-        }
-      } catch (dbError: any) {
-        console.error('❌ Erro específico do banco:', dbError);
-        
-        // Tentar uma segunda vez após um delay maior
-        console.log('🔄 Tentando novamente após delay...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        try {
-          const retryUpdate = await updateUserProfile({ 
-            id: user.id, 
-            avatar_url: avatarUrl 
-          });
-          
-          if (retryUpdate) {
-            console.log('✅ Sucesso na segunda tentativa!');
-            setUploadedImage(avatarUrl);
-            updateUser({ avatarUrl });
-            
-            toast({
-              title: "Imagem atualizada",
-              description: "Sua foto de perfil foi alterada com sucesso."
-            });
-          } else {
-            throw new Error('Falha na segunda tentativa');
-          }
-        } catch (retryError: any) {
-          console.error('❌ Falha definitiva:', retryError);
-          toast({
-            title: "Erro ao salvar foto de perfil",
-            description: "A imagem foi enviada mas não foi possível salvar no perfil. Tente atualizar a página.",
-            variant: "destructive"
-          });
-        }
+      // 4. Atualizar no banco de dados
+      console.log('💾 Atualizando perfil no banco...');
+      const updatedProfile = await updateUserProfile({ 
+        id: user.id, 
+        avatar_url: avatarUrl 
+      });
+
+      if (!updatedProfile) {
+        console.warn('⚠️ Perfil não foi retornado da atualização, mas continuando...');
+      } else {
+        console.log('✅ Perfil atualizado no banco:', updatedProfile);
       }
-    } catch (err: any) {
-      console.error('❌ Erro inesperado no upload:', err);
+
+      // 5. Atualizar no contexto de autenticação
+      updateUser({ avatarUrl });
+
       toast({
-        title: "Falha inesperada no upload",
-        description: err?.message || "Erro desconhecido.",
+        title: "Foto atualizada!",
+        description: "Sua foto de perfil foi alterada com sucesso."
+      });
+
+      console.log('🎉 Upload e atualização concluídos com sucesso!');
+
+    } catch (error: any) {
+      console.error('❌ Erro no processo de upload:', error);
+      
+      // Reverter mudança local se houver erro
+      setUploadedImage(user.avatarUrl || null);
+      
+      toast({
+        title: "Erro ao atualizar foto",
+        description: error?.message || "Ocorreu um erro ao enviar a imagem.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -350,6 +307,10 @@ const Profile = () => {
                           src={uploadedImage} 
                           alt={user.name || 'Avatar'} 
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('❌ Erro ao carregar imagem:', uploadedImage);
+                            setUploadedImage(null);
+                          }}
                         />
                       ) : (
                         <User size={64} className="text-flyerflix-red opacity-70" />
@@ -369,15 +330,17 @@ const Profile = () => {
                     accept=".jpg,.jpeg,.png,.webp"
                     className="hidden"
                     onChange={handleImageUpload}
+                    disabled={isLoading}
                   />
                   
                   <Button 
                     variant="outline" 
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full flex items-center gap-2"
+                    disabled={isLoading}
                   >
                     <Upload size={16} />
-                    Fazer Upload
+                    {isLoading ? 'Enviando...' : 'Fazer Upload'}
                   </Button>
                   
                   <p className="text-xs text-white/60 mt-3 text-center">
