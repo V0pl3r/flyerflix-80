@@ -9,8 +9,6 @@ interface FeaturedTemplateProps {
   onUseNow: (template: Template) => void;
 }
 
-const featuredBg = '/lovable-uploads/3967b6e6-0eab-4f23-a303-7778e7238346.png';
-
 const FeaturedTemplate = ({ template, onUseNow }: FeaturedTemplateProps) => {
   const [imageError, setImageError] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
@@ -30,19 +28,19 @@ const FeaturedTemplate = ({ template, onUseNow }: FeaturedTemplateProps) => {
 
   return (
     <div className="w-full rounded-lg overflow-hidden relative mb-8">
-      {/* Custom static background uploaded by the user */}
-      <div
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{
-          backgroundImage: `url(${featuredBg})`,
-          backgroundPosition: 'center center',
-          backgroundSize: 'cover',
-        }}
-      ></div>
-      {/* Overlay para escurecer */}
+      {/* Background image with gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/80 to-black/40 z-10"></div>
+      <div className="absolute inset-0">
+        <img 
+          src={imageError ? fallbackImage : template.imageUrl} 
+          alt={template.title}
+          className="w-full h-full object-cover opacity-60 blur-[1px]"
+          onError={handleImageError}
+          loading="lazy"
+        />
+      </div>
       
-      {/* Restante do conteúdo em destaque */}
+      {/* Content */}
       <div className="relative z-20 flex flex-col md:flex-row items-center p-6 md:p-8 lg:p-12">
         {/* Template thumbnail */}
         <div className="w-36 md:w-48 lg:w-64 flex-shrink-0 mb-6 md:mb-0 rounded-md overflow-hidden shadow-2xl bg-gray-800">

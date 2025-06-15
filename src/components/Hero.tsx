@@ -46,8 +46,8 @@ const Hero = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50 animate-fade-in"
           style={{ 
-            backgroundImage: "url('/lovable-uploads/a2dba479-c644-496d-b611-fe1ecdc6f592.png')",
-            backgroundPosition: "center center" 
+            backgroundImage: "url('https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80')",
+            backgroundPosition: "center 25%" 
           }}
         ></div>
         <div className="absolute inset-0 bg-gradient-to-t from-flyerflix-black via-transparent to-transparent"></div>

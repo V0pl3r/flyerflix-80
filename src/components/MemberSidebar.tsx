@@ -25,6 +25,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState<UserType | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
   
   useEffect(() => {
@@ -144,6 +145,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <Home size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Home</span>}
@@ -151,12 +153,13 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
           </li>
           <li>
             <Link 
-              to="/perfil" 
+              to="/configuracoes" 
               className={`flex items-center px-3 py-2 rounded-lg transition ${
-                isActive('/perfil')
+                isActive('/configuracoes')
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <User size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Meu Perfil</span>}
@@ -170,6 +173,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <Download size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Meus Downloads</span>}
@@ -183,6 +187,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <Heart size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Favoritos</span>}
@@ -196,6 +201,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <History size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Histórico</span>}
@@ -209,6 +215,7 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
                   ? 'bg-flyerflix-red text-white'
                   : 'text-white/70 hover:bg-white/10 hover:text-white'
               }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <Settings size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Configurações</span>}
@@ -244,35 +251,50 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
     </div>
   );
   
-  // For mobile drawer - render content directly
-  if (isMobileDrawer) {
+  // For desktop
+  if (!isMobileDrawer) {
     return (
       <>
+        {/* Profile Modal */}
         <ProfileModal 
           open={isProfileModalOpen} 
           onOpenChange={setIsProfileModalOpen} 
         />
-        <SidebarContent />
+        
+        {/* Mobile sidebar trigger - only visible on small screens */}
+        <div className="md:hidden fixed top-4 left-4 z-40">
+          <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-white bg-flyerflix-black/80 backdrop-blur-md">
+                <Menu size={24} />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#0b0b0b] p-0 border-r border-white/10 w-[280px]">
+              <MemberSidebar isMobileDrawer={true} />
+            </SheetContent>
+          </Sheet>
+        </div>
+        
+        {/* Desktop sidebar */}
+        <aside 
+          className={`h-screen bg-[#0b0b0b] border-r border-white/10 fixed left-0 top-0 z-30 transition-all duration-300 hidden md:block ${
+            collapsed ? 'w-16' : 'w-64'
+          }`}
+        >
+          <SidebarContent />
+        </aside>
       </>
     );
   }
   
-  // For desktop - always render the sidebar
+  // For mobile drawer
   return (
     <>
       <ProfileModal 
         open={isProfileModalOpen} 
         onOpenChange={setIsProfileModalOpen} 
       />
-      
-      {/* Desktop sidebar - always visible */}
-      <aside 
-        className={`h-screen bg-[#0b0b0b] border-r border-white/10 fixed left-0 top-0 z-30 transition-all duration-300 hidden md:block ${
-          collapsed ? 'w-16' : 'w-64'
-        }`}
-      >
-        <SidebarContent />
-      </aside>
+      <SidebarContent />
     </>
   );
 };

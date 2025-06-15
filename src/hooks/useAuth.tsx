@@ -9,6 +9,8 @@ interface ExtendedUser extends User {
   name?: string;
   plan?: 'free' | 'ultimate';
   avatarUrl?: string;
+  downloads?: number;
+  maxDownloads?: number | 'unlimited';
 }
 
 interface AuthContextType {
@@ -21,7 +23,6 @@ interface AuthContextType {
   checkSubscription: () => Promise<void>;
   updateUser: (userData: Partial<ExtendedUser>) => void;
   isAdmin: () => boolean;
-  refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -43,52 +44,78 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refreshUserProfile = async () => {
-    if (!session?.user) return;
-    
+  const loadUserProfile = async (userId: string, authUser: User) => {
     try {
-      let userProfile = await fetchUserProfile(session.user.id);
+      console.log('Loading user profile for:', userId);
+      const profile = await fetchUserProfile(userId);
       
-      // Se o perfil não existir no Supabase, criar um
-      if (!userProfile) {
-        const newProfile = {
-          id: session.user.id,
-          email: session.user.email,
-          name: session.user.user_metadata?.name || 
-                session.user.user_metadata?.full_name || 
-                session.user.email?.split('@')[0] || '',
-          first_name: session.user.user_metadata?.first_name || '',
-          last_name: session.user.user_metadata?.last_name || '',
-          avatar_url: session.user.user_metadata?.avatar_url,
-          plan: 'free' as const, // Explicitly type as 'free'
-          role: 'user' as const,
-          is_admin: false,
-          user_id: session.user.id
-        };
-        
-        userProfile = await updateUserProfile(newProfile);
-      }
-      
-      if (userProfile) {
-        // Atualizar o usuário com dados do perfil
+      if (profile) {
+        console.log('Profile found:', profile);
         const extendedUser: ExtendedUser = {
-          ...session.user,
-          name: userProfile.name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
-          plan: (userProfile.plan === 'ultimate' ? 'ultimate' : 'free') as 'free' | 'ultimate',
-          avatarUrl: userProfile.avatar_url || session.user.user_metadata?.avatar_url
+          ...authUser,
+          name: profile.name || profile.first_name || authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+          plan: profile.plan as 'free' | 'ultimate' || 'free',
+          avatarUrl: profile.avatar_url || authUser.user_metadata?.avatar_url,
+          downloads: profile.downloads_today || 0,
+          maxDownloads: profile.plan === 'ultimate' ? 'unlimited' : 2
         };
         
         setUser(extendedUser);
         
-        // Armazenar no localStorage
+        // Update localStorage with the complete user data
         localStorage.setItem('flyerflix-user', JSON.stringify({
           ...extendedUser,
-          id: session.user.id,
-          email: session.user.email
+          id: authUser.id,
+          email: authUser.email
+        }));
+      } else {
+        console.log('No profile found, creating default user');
+        // Create default user if no profile exists
+        const defaultUser: ExtendedUser = {
+          ...authUser,
+          name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+          plan: 'free',
+          avatarUrl: authUser.user_metadata?.avatar_url,
+          downloads: 0,
+          maxDownloads: 2
+        };
+        
+        setUser(defaultUser);
+        
+        // Try to create profile in database
+        await updateUserProfile({
+          id: authUser.id,
+          email: authUser.email,
+          name: defaultUser.name,
+          plan: 'free',
+          avatar_url: defaultUser.avatarUrl,
+          downloads_today: 0
+        });
+        
+        localStorage.setItem('flyerflix-user', JSON.stringify({
+          ...defaultUser,
+          id: authUser.id,
+          email: authUser.email
         }));
       }
     } catch (error) {
-      console.error('Erro ao carregar perfil do usuário:', error);
+      console.error('Error loading user profile:', error);
+      // Fallback to basic user data
+      const fallbackUser: ExtendedUser = {
+        ...authUser,
+        name: authUser.user_metadata?.name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+        plan: 'free',
+        avatarUrl: authUser.user_metadata?.avatar_url,
+        downloads: 0,
+        maxDownloads: 2
+      };
+      
+      setUser(fallbackUser);
+      localStorage.setItem('flyerflix-user', JSON.stringify({
+        ...fallbackUser,
+        id: authUser.id,
+        email: authUser.email
+      }));
     }
   };
 
@@ -100,21 +127,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setSession(session);
         
         if (session?.user) {
-          // Carregar o perfil do Supabase em background
-          setTimeout(() => {
-            refreshUserProfile();
-          }, 0);
-          
-          // Criar usuário temporário até o perfil carregar
-          const tempUser: ExtendedUser = {
-            ...session.user,
-            name: session.user.user_metadata?.name || 
-                  session.user.user_metadata?.full_name || 
-                  session.user.email?.split('@')[0] || '',
-            plan: 'free',
-            avatarUrl: session.user.user_metadata?.avatar_url
-          };
-          setUser(tempUser);
+          // Load complete user profile from database
+          await loadUserProfile(session.user.id, session.user);
         } else {
           setUser(null);
           localStorage.removeItem('flyerflix-user');
@@ -125,26 +139,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Initial session check:', session?.user?.email);
       setSession(session);
       
       if (session?.user) {
-        // Carregar o perfil do Supabase
-        setTimeout(() => {
-          refreshUserProfile();
-        }, 0);
-        
-        // Criar usuário temporário
-        const tempUser: ExtendedUser = {
-          ...session.user,
-          name: session.user.user_metadata?.name || 
-                session.user.user_metadata?.full_name || 
-                session.user.email?.split('@')[0] || '',
-          plan: 'free',
-          avatarUrl: session.user.user_metadata?.avatar_url
-        };
-        setUser(tempUser);
+        await loadUserProfile(session.user.id, session.user);
       }
       
       setLoading(false);
@@ -180,22 +180,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
-      // Verificar se há uma sessão ativa antes de tentar fazer logout
-      if (!session) {
-        console.log('No active session to logout from');
-        // Limpar dados locais mesmo sem sessão ativa
-        localStorage.removeItem('flyerflix-user');
-        setUser(null);
-        setSession(null);
-        toast.success('Logout realizado com sucesso!');
-        return;
-      }
-
       const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-        throw error;
-      }
+      if (error) throw error;
       
       localStorage.removeItem('flyerflix-user');
       setUser(null);
@@ -204,25 +190,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.success('Logout realizado com sucesso!');
     } catch (error: any) {
       console.error('Error during logout:', error);
-      
-      // Mesmo com erro, limpar dados locais para evitar estado inconsistente
-      localStorage.removeItem('flyerflix-user');
-      setUser(null);
-      setSession(null);
-      
-      toast.error('Erro ao fazer logout, mas você foi desconectado localmente');
+      toast.error('Erro ao fazer logout: ' + error.message);
     }
   };
 
-  const updateUser = (userData: Partial<ExtendedUser>) => {
-    if (user) {
+  const updateUser = async (userData: Partial<ExtendedUser>) => {
+    if (user && session) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
       localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+      
+      // Update profile in database
+      try {
+        await updateUserProfile({
+          id: session.user.id,
+          name: updatedUser.name,
+          avatar_url: updatedUser.avatarUrl,
+          plan: updatedUser.plan,
+          downloads_today: updatedUser.downloads,
+          email: updatedUser.email
+        });
+      } catch (error) {
+        console.error('Error updating user profile in database:', error);
+      }
     }
   };
 
   const isAdmin = () => {
+    // Check if user is admin based on email or metadata
     return user?.email === 'admin@flyerflix.com' || user?.user_metadata?.role === 'admin';
   };
 
@@ -278,6 +273,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       console.log('Subscription check result:', data);
       
+      // Update user plan based on subscription status
       if (data.isActive && user) {
         updateUser({ plan: 'ultimate' });
       }
@@ -296,7 +292,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     checkSubscription,
     updateUser,
     isAdmin,
-    refreshUserProfile,
   };
 
   return (
