@@ -61,7 +61,10 @@ const Navbar = () => {
       setIsLoading(true);
       // Permitir múltiplos emails de admin
       const allowedAdminEmails = ['admin@flyerflix.com', 'foxdesignpb@gmail.com'];
-      if (!allowedAdminEmails.includes(adminEmail)) {
+      // Normaliza para minúsculas e remove espaços
+      const normalizedInputEmail = adminEmail.trim().toLowerCase();
+      const isAllowed = allowedAdminEmails.some(email => email.trim().toLowerCase() === normalizedInputEmail);
+      if (!isAllowed) {
         throw new Error('Email de administrador não reconhecido');
       }
       
@@ -72,12 +75,12 @@ const Navbar = () => {
       
       if (error) throw error;
       
-      // Verify if user is admin in profiles table
+      // Verifica se é admin mesmo
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
       
       if (profileError || !profileData || !profileData.is_admin) {
         throw new Error('Acesso administrativo não autorizado');
