@@ -15,7 +15,7 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { LogOut, User, Infinity, Upload, Camera, Eye, EyeOff, History, Lock, Bell, Globe } from 'lucide-react';
+import { LogOut, User, Infinity, Camera, Eye, EyeOff, History, Lock, Bell, Globe } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { updateUserProfile } from '@/models/UserProfile';
@@ -306,11 +306,14 @@ const Profile = () => {
               <Card className="col-span-1">
                 <CardHeader>
                   <CardTitle>Foto do Perfil</CardTitle>
-                  <CardDescription>Sua foto será exibida em seu perfil e comentários</CardDescription>
+                  <CardDescription>Clique na foto para alterar</CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center">
                   <div className="relative mb-4 group">
-                    <div className="w-32 h-32 rounded-full overflow-hidden bg-flyerflix-black/50 border-2 border-flyerflix-red flex items-center justify-center">
+                    <div 
+                      className="w-32 h-32 rounded-full overflow-hidden bg-flyerflix-black/50 border-2 border-flyerflix-red flex items-center justify-center cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       {uploadedImage ? (
                         <img 
                           src={uploadedImage} 
@@ -349,17 +352,8 @@ const Profile = () => {
                     disabled={isUploadingAvatar}
                   />
                   
-                  <Button 
-                    variant="outline" 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full flex items-center gap-2"
-                    disabled={isUploadingAvatar}
-                  >
-                    <Upload size={16} />
-                    {isUploadingAvatar ? 'Enviando...' : 'Fazer Upload'}
-                  </Button>
-                  
                   <p className="text-xs text-white/60 mt-3 text-center">
+                    Clique na imagem para alterar sua foto.<br />
                     Formatos suportados: JPG, PNG, WebP. Tamanho máximo: 2MB
                   </p>
                 </CardContent>
