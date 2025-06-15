@@ -46,7 +46,7 @@ const Hero = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50 animate-fade-in"
           style={{ 
-            backgroundImage: "url('/lovable-uploads/b7694c24-2c06-47b6-9de1-48edf9d2708e.png')",
+            backgroundImage: "url('/lovable-uploads/a2dba479-c644-496d-b611-fe1ecdc6f592.png')",
             backgroundPosition: "center center" 
           }}
         ></div>
