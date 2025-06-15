@@ -97,11 +97,12 @@ const Profile = () => {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Arquivo para upload selecionado:', e.target.files?.[0]);
+    console.log('🔄 Iniciando upload de imagem...');
+    console.log('Arquivo selecionado:', e.target.files?.[0]);
     const file = e.target.files?.[0];
 
     if (!file) {
-      console.warn('Nenhum arquivo selecionado.');
+      console.warn('❌ Nenhum arquivo selecionado.');
       toast({
         title: "Nenhum arquivo selecionado",
         description: "Por favor, selecione uma imagem para enviar.",
@@ -110,7 +111,14 @@ const Profile = () => {
       return;
     }
 
+    console.log('📁 Arquivo válido encontrado:', {
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+
     if (file.size > MAX_FILE_SIZE) {
+      console.warn('❌ Arquivo muito grande:', file.size);
       toast({
         title: "Erro ao fazer upload",
         description: "O tamanho máximo permitido é 2MB.",
@@ -120,6 +128,7 @@ const Profile = () => {
     }
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      console.warn('❌ Tipo de arquivo não suportado:', file.type);
       toast({
         title: "Erro ao fazer upload",
         description: "Formato não suportado. Use JPG, PNG ou WebP.",
@@ -129,7 +138,7 @@ const Profile = () => {
     }
 
     if (!user) {
-      console.error('Usuário não encontrado no contexto/localStorage.');
+      console.error('❌ Usuário não encontrado no contexto/localStorage.');
       toast({
         title: "Falha de Usuário",
         description: "Não foi possível encontrar suas informações. Faça login novamente.",
@@ -138,20 +147,22 @@ const Profile = () => {
       return;
     }
 
+    console.log('👤 Usuário encontrado:', { id: user.id, name: user.name });
+
     try {
       // Nome único pro arquivo (userId/timestamp.ext)
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      console.log('Fazendo upload para:', filePath);
+      console.log('📤 Fazendo upload para:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
-        console.error('Erro no upload para Supabase:', uploadError);
+        console.error('❌ Erro no upload para Supabase:', uploadError);
         toast({
           title: "Erro ao enviar imagem",
           description: uploadError.message || "Ocorreu um erro ao enviar a imagem.",
@@ -160,8 +171,10 @@ const Profile = () => {
         return;
       }
 
+      console.log('✅ Upload concluído com sucesso!');
+
       const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      console.log('URL pública do avatar:', data?.publicUrl);
+      console.log('🔗 URL pública do avatar:', data?.publicUrl);
 
       const avatarUrl = data?.publicUrl;
 
@@ -169,8 +182,14 @@ const Profile = () => {
         throw new Error('URL pública do Supabase não encontrada!');
       }
 
+      console.log('💾 Tentando salvar no banco de dados...');
+      console.log('Dados a serem salvos:', { id: user.id, avatar_url: avatarUrl });
+      
       const updated = await updateUserProfile({ id: user.id, avatar_url: avatarUrl });
+      console.log('📊 Resultado da atualização do perfil:', updated);
+      
       if (!updated) {
+        console.error('❌ Falha ao atualizar perfil no banco de dados');
         toast({
           title: "Erro ao salvar foto de perfil",
           description: "Tente novamente.",
@@ -179,18 +198,22 @@ const Profile = () => {
         return;
       }
 
+      console.log('✅ Perfil atualizado com sucesso no banco!');
+
       setUploadedImage(avatarUrl);
 
       const updatedUser = { ...user, avatarUrl };
       setUser(updatedUser);
       localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
 
+      console.log('✅ Estado local atualizado!');
+
       toast({
         title: "Imagem atualizada",
         description: "Sua foto de perfil foi alterada com sucesso."
       });
     } catch (err: any) {
-      console.error('Erro inesperado no upload:', err);
+      console.error('❌ Erro inesperado no upload:', err);
       toast({
         title: "Falha inesperada no upload",
         description: err?.message || "Erro desconhecido.",
