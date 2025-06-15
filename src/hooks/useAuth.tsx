@@ -1,7 +1,9 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { fetchUserProfile } from '@/models/UserProfile';
 
 // Extended user interface with custom properties
 interface ExtendedUser extends User {
@@ -41,60 +43,77 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Nova função auxiliar para buscar e montar o ExtendedUser atualizado do Supabase
+  const loadProfileFromSupabase = async (userId: string, sessionUser: User): Promise<ExtendedUser> => {
+    const dbProfile = await fetchUserProfile(userId);
+
+    if (dbProfile) {
+      return {
+        ...sessionUser,
+        name: dbProfile.name || sessionUser.user_metadata?.name || sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0],
+        plan: dbProfile.plan ?? 'free',
+        avatarUrl: dbProfile.avatar_url || sessionUser.user_metadata?.avatar_url,
+        email: dbProfile.email || sessionUser.email,
+      };
+    } else {
+      // fallback: só dados do Supabase Auth
+      return {
+        ...sessionUser,
+        name: sessionUser.user_metadata?.name || sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0],
+        plan: 'free',
+        avatarUrl: sessionUser.user_metadata?.avatar_url,
+        email: sessionUser.email,
+      };
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
-        
+
         if (session?.user) {
-          // Create extended user with default properties
-          const extendedUser: ExtendedUser = {
-            ...session.user,
-            name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-            plan: 'free', // Default plan
-            avatarUrl: session.user.user_metadata?.avatar_url
-          };
-          setUser(extendedUser);
-          
-          // Store user data in localStorage for persistence
-          localStorage.setItem('flyerflix-user', JSON.stringify({
-            ...extendedUser,
-            id: session.user.id,
-            email: session.user.email
-          }));
+          // Busca perfil do Supabase na mudança de auth (async via setTimeout)
+          setLoading(true);
+          setTimeout(async () => {
+            const extendedUser = await loadProfileFromSupabase(session.user.id, session.user);
+
+            setUser(extendedUser);
+            // Persiste também no localStorage
+            localStorage.setItem('flyerflix-user', JSON.stringify({
+              ...extendedUser,
+              id: session.user.id,
+              email: session.user.email
+            }));
+            setLoading(false);
+          }, 0);
         } else {
           setUser(null);
           localStorage.removeItem('flyerflix-user');
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', session?.user?.email);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
-      
+
       if (session?.user) {
-        const extendedUser: ExtendedUser = {
-          ...session.user,
-          name: session.user.user_metadata?.name || session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-          plan: 'free',
-          avatarUrl: session.user.user_metadata?.avatar_url
-        };
+        setLoading(true);
+        const extendedUser = await loadProfileFromSupabase(session.user.id, session.user);
+
         setUser(extendedUser);
-        
         localStorage.setItem('flyerflix-user', JSON.stringify({
           ...extendedUser,
           id: session.user.id,
           email: session.user.email
         }));
+        setLoading(false);
+      } else {
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -107,13 +126,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email,
         password
       });
-      
+
       if (error) {
         console.error('Login error:', error);
         toast.error('Erro ao fazer login: ' + error.message);
         return { error };
       }
-      
+
       toast.success('Login realizado com sucesso!');
       return { error: null };
     } catch (error: any) {
@@ -129,11 +148,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
+
       localStorage.removeItem('flyerflix-user');
       setUser(null);
       setSession(null);
-      
+
       toast.success('Logout realizado com sucesso!');
     } catch (error: any) {
       console.error('Error during logout:', error);
@@ -205,7 +224,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
 
       console.log('Subscription check result:', data);
-      
+
       // Update user plan based on subscription status
       if (data.isActive && user) {
         updateUser({ plan: 'ultimate' });
