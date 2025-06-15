@@ -168,17 +168,35 @@ const Profile = () => {
 
       console.log('💾 Atualizando perfil no banco...');
       
-      // Atualizar o perfil usando a função do modelo que já lida com as políticas RLS
-      const updatedProfile = await updateUserProfile({
-        id: user.id,
-        avatar_url: avatarUrl
-      });
+      // Usar uma abordagem mais direta para atualizar o avatar
+      const { data: updateData, error: updateError } = await supabase
+        .from('profiles')
+        .update({ 
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
 
-      if (!updatedProfile) {
-        throw new Error('Erro ao atualizar perfil no banco de dados');
+      if (updateError) {
+        console.error('❌ Erro ao atualizar perfil via Supabase:', updateError);
+        
+        // Se der erro, tentar com a função do modelo
+        console.log('🔄 Tentando atualizar via modelo...');
+        const updatedProfile = await updateUserProfile({
+          id: user.id,
+          avatar_url: avatarUrl
+        });
+
+        if (!updatedProfile) {
+          throw new Error('Não foi possível atualizar o perfil');
+        }
+        
+        console.log('✅ Perfil atualizado via modelo:', updatedProfile);
+      } else {
+        console.log('✅ Perfil atualizado via Supabase:', updateData);
       }
-
-      console.log('✅ Perfil atualizado:', updatedProfile);
 
       // Atualizar contexto do usuário
       updateUser({ avatarUrl });
