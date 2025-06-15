@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MemberLayout from '../components/MemberLayout';
@@ -169,23 +168,17 @@ const Profile = () => {
 
       console.log('💾 Atualizando perfil no banco...');
       
-      // Tentar atualizar o perfil diretamente via Supabase
-      const { data: updateData, error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          avatar_url: avatarUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-        .select()
-        .single();
+      // Atualizar o perfil usando a função do modelo que já lida com as políticas RLS
+      const updatedProfile = await updateUserProfile({
+        id: user.id,
+        avatar_url: avatarUrl
+      });
 
-      if (updateError) {
-        console.error('❌ Erro ao atualizar perfil:', updateError);
-        throw new Error(`Erro ao salvar: ${updateError.message}`);
+      if (!updatedProfile) {
+        throw new Error('Erro ao atualizar perfil no banco de dados');
       }
 
-      console.log('✅ Perfil atualizado:', updateData);
+      console.log('✅ Perfil atualizado:', updatedProfile);
 
       // Atualizar contexto do usuário
       updateUser({ avatarUrl });
