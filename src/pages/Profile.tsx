@@ -19,16 +19,7 @@ import { LogOut, User, Infinity, Upload, Camera, Eye, EyeOff, History, Lock, Bel
 import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { updateUserProfile } from '@/models/UserProfile';
-
-type UserType = {
-  id: string; // Fix: add the missing id property
-  name: string;
-  email: string;
-  plan: string;
-  downloads: number;
-  maxDownloads: number | 'unlimited';
-  avatarUrl?: string;
-};
+import { useAuth } from '@/hooks/useAuth';
 
 type ProfileFormData = {
   name: string;
@@ -42,7 +33,6 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 const Profile = () => {
-  const [user, setUser] = useState<UserType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -52,6 +42,7 @@ const Profile = () => {
   
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, updateUser, logout } = useAuth();
 
   const form = useForm<ProfileFormData>({
     defaultValues: {
@@ -64,28 +55,21 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem('flyerflix-user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
+    if (user) {
       form.reset({
-        name: parsedUser.name,
-        email: parsedUser.email
+        name: user.name || '',
+        email: user.email || ''
       });
-      if (parsedUser.avatarUrl) {
-        setUploadedImage(parsedUser.avatarUrl);
+      if (user.avatarUrl) {
+        setUploadedImage(user.avatarUrl);
       }
     } else {
       navigate('/login');
     }
-  }, [navigate, form]);
+  }, [user, navigate, form]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('flyerflix-user');
-    toast({
-      title: "Sessão encerrada",
-      description: "Você foi desconectado com sucesso.",
-    });
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
   };
 
@@ -202,9 +186,8 @@ const Profile = () => {
 
       setUploadedImage(avatarUrl);
 
-      const updatedUser = { ...user, avatarUrl };
-      setUser(updatedUser);
-      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+      // Atualizar o contexto do useAuth
+      updateUser({ avatarUrl });
 
       console.log('✅ Estado local atualizado!');
 
@@ -222,7 +205,7 @@ const Profile = () => {
     }
   };
 
-  const onSubmit = (data: ProfileFormData) => {
+  const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     
     // Validate passwords if user is trying to change password
@@ -248,17 +231,20 @@ const Profile = () => {
       }
     }
     
-    // Simulate API call
-    setTimeout(() => {
+    try {
       if (user) {
-        const updatedUser = { 
-          ...user, 
+        // Update profile in database
+        await updateUserProfile({
+          id: user.id,
           name: data.name,
           email: data.email
-        };
+        });
         
-        setUser(updatedUser);
-        localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+        // Update auth context
+        updateUser({ 
+          name: data.name,
+          email: data.email
+        });
         
         toast({
           title: "Perfil atualizado",
@@ -266,13 +252,20 @@ const Profile = () => {
         });
       }
       
-      setIsLoading(false);
-      
       // Reset password fields
       form.setValue('currentPassword', '');
       form.setValue('newPassword', '');
       form.setValue('confirmPassword', '');
-    }, 1000);
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Ocorreu um erro ao atualizar suas informações.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!user) return null;
@@ -311,7 +304,7 @@ const Profile = () => {
                       {uploadedImage ? (
                         <img 
                           src={uploadedImage} 
-                          alt={user.name} 
+                          alt={user.name || 'Avatar'} 
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -543,14 +536,12 @@ const Profile = () => {
                       <div className="mb-4">
                         <div className="flex justify-between text-xs text-white/70 mb-1">
                           <span>Downloads hoje</span>
-                          <span>{user.downloads}/{user.maxDownloads}</span>
+                          <span>0/2</span>
                         </div>
                         <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-flyerflix-red"
-                            style={{ 
-                              width: `${Math.min((user.downloads / (user.maxDownloads as number)) * 100, 100)}%` 
-                            }}
+                            style={{ width: '0%' }}
                           ></div>
                         </div>
                       </div>
