@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -147,35 +146,18 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
         <DialogHeader>
           <DialogTitle>Seu Perfil</DialogTitle>
           <DialogDescription className="text-white/70">
-            Visualize e edite suas informações de perfil
+            Visualize suas informações de perfil
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid gap-6 py-4">
           <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <Avatar className="h-24 w-24 border-2 border-flyerflix-red">
-                <AvatarImage src={avatarPreview} alt={user.name} className="object-cover" />
-                <AvatarFallback className="bg-flyerflix-black text-flyerflix-red text-lg">
-                  {user.name?.substring(0, 2).toUpperCase() || user.email?.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <label 
-                htmlFor="avatar-upload" 
-                className="absolute bottom-0 right-0 bg-flyerflix-red text-white p-1.5 rounded-full cursor-pointer hover:bg-red-700 transition-colors"
-              >
-                <Upload size={14} />
-                <span className="sr-only">Fazer upload de foto</span>
-              </label>
-              <input 
-                type="file" 
-                id="avatar-upload" 
-                accept="image/png, image/jpeg, image/jpg" 
-                className="hidden" 
-                onChange={handleFileUpload}
-              />
-            </div>
-            
+            <Avatar className="h-24 w-24 border-2 border-flyerflix-red">
+              <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
+              <AvatarFallback className="bg-flyerflix-black text-flyerflix-red text-lg">
+                {user.name?.substring(0, 2).toUpperCase() || user.email?.substring(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
             <div className="flex items-center gap-2">
               <BadgeCheck className={`h-5 w-5 ${user.plan === 'ultimate' ? 'text-flyerflix-red' : 'text-gray-500'}`} />
               <span className={`text-sm ${user.plan === 'ultimate' ? 'text-flyerflix-red' : 'text-gray-500'}`}>
@@ -183,44 +165,26 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
               </span>
             </div>
           </div>
-          
+
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="name">Nome</Label>
-              <Input 
-                id="name" 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                className="bg-[#2a2a2a] border-white/10"
-              />
+              <Label className="text-white/60">Nome</Label>
+              <div className="bg-[#2a2a2a] border-white/10 rounded-md px-3 py-2">{user.name}</div>
             </div>
-            
             <div className="grid gap-1.5">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                value={user.email} 
-                disabled 
-                className="bg-[#2a2a2a] border-white/10 opacity-70"
-              />
+              <Label className="text-white/60">Email</Label>
+              <div className="bg-[#2a2a2a] border-white/10 rounded-md px-3 py-2 opacity-70">{user.email}</div>
               <p className="text-xs text-white/50">O email não pode ser alterado</p>
             </div>
           </div>
         </div>
-        
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-end">
           <Button 
             variant="outline" 
             onClick={() => onOpenChange(false)} 
             className="border-white/20 hover:bg-white/10"
           >
-            Cancelar
-          </Button>
-          <Button 
-            onClick={handleSaveProfile}
-            className="bg-flyerflix-red hover:bg-red-700"
-          >
-            Salvar alterações
+            Fechar
           </Button>
         </div>
       </DialogContent>
