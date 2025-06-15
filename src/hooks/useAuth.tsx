@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -60,7 +61,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           first_name: session.user.user_metadata?.first_name || '',
           last_name: session.user.user_metadata?.last_name || '',
           avatar_url: session.user.user_metadata?.avatar_url,
-          plan: 'free',
+          plan: 'free' as const, // Explicitly type as 'free'
           role: 'user' as const,
           is_admin: false,
           user_id: session.user.id
@@ -74,7 +75,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const extendedUser: ExtendedUser = {
           ...session.user,
           name: userProfile.name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
-          plan: (userProfile.plan as 'free' | 'ultimate') || 'free',
+          plan: (userProfile.plan === 'ultimate' ? 'ultimate' : 'free') as 'free' | 'ultimate',
           avatarUrl: userProfile.avatar_url || session.user.user_metadata?.avatar_url
         };
         
