@@ -145,9 +145,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      can_access_own_profile: {
-        Args: { profile_user_id: string }
-        Returns: boolean
+      get_current_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       is_admin: {
         Args: Record<PropertyKey, never> | { user_id: string }

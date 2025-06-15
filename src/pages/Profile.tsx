@@ -168,7 +168,7 @@ const Profile = () => {
 
       console.log('💾 Atualizando perfil no banco...');
       
-      // Usar uma abordagem mais direta para atualizar o avatar
+      // Atualizar perfil diretamente no banco
       const { data: updateData, error: updateError } = await supabase
         .from('profiles')
         .update({ 
@@ -180,23 +180,11 @@ const Profile = () => {
         .single();
 
       if (updateError) {
-        console.error('❌ Erro ao atualizar perfil via Supabase:', updateError);
-        
-        // Se der erro, tentar com a função do modelo
-        console.log('🔄 Tentando atualizar via modelo...');
-        const updatedProfile = await updateUserProfile({
-          id: user.id,
-          avatar_url: avatarUrl
-        });
-
-        if (!updatedProfile) {
-          throw new Error('Não foi possível atualizar o perfil');
-        }
-        
-        console.log('✅ Perfil atualizado via modelo:', updatedProfile);
-      } else {
-        console.log('✅ Perfil atualizado via Supabase:', updateData);
+        console.error('❌ Erro ao atualizar perfil:', updateError);
+        throw new Error(`Erro ao atualizar perfil: ${updateError.message}`);
       }
+
+      console.log('✅ Perfil atualizado:', updateData);
 
       // Atualizar contexto do usuário
       updateUser({ avatarUrl });
