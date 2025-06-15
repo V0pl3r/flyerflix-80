@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -181,8 +180,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const logout = async () => {
     try {
+      // Verificar se há uma sessão ativa antes de tentar fazer logout
+      if (!session) {
+        console.log('No active session to logout from');
+        // Limpar dados locais mesmo sem sessão ativa
+        localStorage.removeItem('flyerflix-user');
+        setUser(null);
+        setSession(null);
+        toast.success('Logout realizado com sucesso!');
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      if (error) {
+        console.error('Logout error:', error);
+        throw error;
+      }
       
       localStorage.removeItem('flyerflix-user');
       setUser(null);
@@ -191,7 +204,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       toast.success('Logout realizado com sucesso!');
     } catch (error: any) {
       console.error('Error during logout:', error);
-      toast.error('Erro ao fazer logout: ' + error.message);
+      
+      // Mesmo com erro, limpar dados locais para evitar estado inconsistente
+      localStorage.removeItem('flyerflix-user');
+      setUser(null);
+      setSession(null);
+      
+      toast.error('Erro ao fazer logout, mas você foi desconectado localmente');
     }
   };
 
