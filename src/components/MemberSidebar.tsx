@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,14 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   
   const handleAvatarClick = () => {
     setIsProfileModalOpen(true);
+  };
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsProfileModalOpen(true);
+    if (isMobileDrawer) {
+      setIsMobileOpen(false);
+    }
   };
   
   if (!user) return null;
@@ -151,18 +160,13 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
             </Link>
           </li>
           <li>
-            <Link 
-              to="/perfil" 
-              className={`flex items-center px-3 py-2 rounded-lg transition ${
-                isActive('/perfil')
-                  ? 'bg-flyerflix-red text-white'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-              }`}
-              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
+            <button 
+              onClick={handleProfileClick}
+              className={`w-full flex items-center px-3 py-2 rounded-lg transition text-white/70 hover:bg-white/10 hover:text-white`}
             >
               <User size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Meu Perfil</span>}
-            </Link>
+            </button>
           </li>
           <li>
             <Link 
