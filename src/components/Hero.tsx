@@ -46,7 +46,7 @@ const Hero = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-50 animate-fade-in"
           style={{ 
-            backgroundImage: "url('https://images.unsplash.com/photo-1605810230434-7631ac76ec81?auto=format&fit=crop&q=80')",
+            backgroundImage: "url('/lovable-uploads/c7d648dd-1798-48a5-ac06-eb45e82497be.png')",
             backgroundPosition: "center 25%" 
           }}
         ></div>
@@ -99,3 +99,4 @@ const Hero = () => {
 };
 
 export default Hero;
+
