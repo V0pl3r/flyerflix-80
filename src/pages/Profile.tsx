@@ -21,6 +21,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { updateUserProfile } from '@/models/UserProfile';
 
 type UserType = {
+  id: string; // Fix: add the missing id property
   name: string;
   email: string;
   plan: string;
