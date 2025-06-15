@@ -82,8 +82,8 @@ const Profile = () => {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     console.log('🔄 Iniciando upload de imagem...');
+    console.log('Arquivo selecionado:', e.target.files?.[0]);
     const file = e.target.files?.[0];
-    console.log('Arquivo selecionado:', file);
 
     if (!file) {
       console.warn('❌ Nenhum arquivo selecionado.');
@@ -122,7 +122,7 @@ const Profile = () => {
     }
 
     if (!user) {
-      console.error('❌ Usuário não encontrado no contexto.');
+      console.error('❌ Usuário não encontrado no contexto/localStorage.');
       toast({
         title: "Falha de Usuário",
         description: "Não foi possível encontrar suas informações. Faça login novamente.",
@@ -137,16 +137,13 @@ const Profile = () => {
       // Nome único pro arquivo (userId/timestamp.ext)
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-      console.log('📤 Fazendo upload para:', fileName);
+      console.log('📤 Fazendo upload para:', filePath);
 
-      // Upload para o Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { 
-          upsert: true,
-          contentType: file.type
-        });
+        .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
         console.error('❌ Erro no upload para Supabase:', uploadError);
@@ -160,85 +157,44 @@ const Profile = () => {
 
       console.log('✅ Upload concluído com sucesso!');
 
-      // Obter URL pública
-      const { data } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      console.log('🔗 URL pública do avatar:', data?.publicUrl);
+
       const avatarUrl = data?.publicUrl;
 
       if (!avatarUrl) {
-        console.error('❌ URL pública não encontrada');
+        throw new Error('URL pública do Supabase não encontrada!');
+      }
+
+      console.log('💾 Tentando salvar no banco de dados...');
+      console.log('Dados a serem salvos:', { id: user.id, avatar_url: avatarUrl });
+      
+      const updated = await updateUserProfile({ id: user.id, avatar_url: avatarUrl });
+      console.log('📊 Resultado da atualização do perfil:', updated);
+      
+      if (!updated) {
+        console.error('❌ Falha ao atualizar perfil no banco de dados');
         toast({
-          title: "Erro ao obter URL da imagem",
-          description: "Não foi possível obter a URL pública da imagem.",
+          title: "Erro ao salvar foto de perfil",
+          description: "Tente novamente.",
           variant: "destructive"
         });
         return;
       }
 
-      console.log('🔗 URL pública do avatar:', avatarUrl);
+      console.log('✅ Perfil atualizado com sucesso no banco!');
 
-      // Aguardar um pouco antes de tentar salvar
-      await new Promise(resolve => setTimeout(resolve, 500));
+      setUploadedImage(avatarUrl);
 
-      console.log('💾 Tentando salvar no banco de dados...');
-      console.log('📝 Dados para salvar:', { id: user.id, avatar_url: avatarUrl });
-      
-      // Usar uma tentativa mais robusta para salvar
-      try {
-        const updated = await updateUserProfile({ 
-          id: user.id, 
-          avatar_url: avatarUrl 
-        });
-        
-        console.log('📊 Resultado da atualização:', updated);
-        
-        if (updated) {
-          console.log('✅ Perfil atualizado com sucesso no banco!');
-          
-          // Atualizar estado local
-          setUploadedImage(avatarUrl);
-          updateUser({ avatarUrl });
-          
-          toast({
-            title: "Imagem atualizada",
-            description: "Sua foto de perfil foi alterada com sucesso."
-          });
-        } else {
-          throw new Error('Nenhum dado retornado da atualização');
-        }
-      } catch (dbError: any) {
-        console.error('❌ Erro específico do banco:', dbError);
-        
-        // Tentar uma segunda vez após um delay maior
-        console.log('🔄 Tentando novamente após delay...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        try {
-          const retryUpdate = await updateUserProfile({ 
-            id: user.id, 
-            avatar_url: avatarUrl 
-          });
-          
-          if (retryUpdate) {
-            console.log('✅ Sucesso na segunda tentativa!');
-            setUploadedImage(avatarUrl);
-            updateUser({ avatarUrl });
-            
-            toast({
-              title: "Imagem atualizada",
-              description: "Sua foto de perfil foi alterada com sucesso."
-            });
-          } else {
-            throw new Error('Falha na segunda tentativa');
-          }
-        } catch (retryError: any) {
-          console.error('❌ Falha definitiva:', retryError);
-          toast({
-            title: "Erro ao salvar foto de perfil",
-            description: "A imagem foi enviada mas não foi possível salvar no perfil. Tente atualizar a página.",
-            variant: "destructive"
-          });
-        }
-      }
+      // Atualizar o contexto do useAuth
+      updateUser({ avatarUrl });
+
+      console.log('✅ Estado local atualizado!');
+
+      toast({
+        title: "Imagem atualizada",
+        description: "Sua foto de perfil foi alterada com sucesso."
+      });
     } catch (err: any) {
       console.error('❌ Erro inesperado no upload:', err);
       toast({
