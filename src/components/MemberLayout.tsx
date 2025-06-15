@@ -1,4 +1,3 @@
-
 import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MemberSidebar from './MemberSidebar';
@@ -143,7 +142,15 @@ const MemberLayout = ({ children, showWelcomeMessage = false }: MemberLayoutProp
   }
 
   return (
-    <div className="min-h-screen bg-flyerflix-black text-white">
+    <div 
+      className="min-h-screen text-white relative"
+      style={{
+        background: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/lovable-uploads/e760379d-0f5a-43b3-ab79-b23c74d7c396.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       {/* Sidebar - Always render for desktop */}
       <MemberSidebar />
       
