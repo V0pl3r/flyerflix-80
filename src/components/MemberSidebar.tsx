@@ -46,14 +46,6 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   const handleAvatarClick = () => {
     setIsProfileModalOpen(true);
   };
-
-  const handleProfileClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsProfileModalOpen(true);
-    if (isMobileDrawer) {
-      setIsMobileOpen(false);
-    }
-  };
   
   if (!user) return null;
 
@@ -160,13 +152,18 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
             </Link>
           </li>
           <li>
-            <button 
-              onClick={handleProfileClick}
-              className={`w-full flex items-center px-3 py-2 rounded-lg transition text-white/70 hover:bg-white/10 hover:text-white`}
+            <Link 
+              to="/configuracoes" 
+              className={`flex items-center px-3 py-2 rounded-lg transition ${
+                isActive('/configuracoes')
+                  ? 'bg-flyerflix-red text-white'
+                  : 'text-white/70 hover:bg-white/10 hover:text-white'
+              }`}
+              onClick={() => isMobileDrawer && setIsMobileOpen(false)}
             >
               <User size={18} className={collapsed && !isMobileDrawer ? 'mx-auto' : 'mr-3'} />
               {(!collapsed || isMobileDrawer) && <span>Meu Perfil</span>}
-            </button>
+            </Link>
           </li>
           <li>
             <Link 
