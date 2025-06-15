@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,13 +48,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const dbProfile = await fetchUserProfile(userId);
 
     if (dbProfile) {
-      // Ensure plan is properly typed - default to 'free' if invalid
-      const validPlan: 'free' | 'ultimate' = dbProfile.plan === 'ultimate' ? 'ultimate' : 'free';
-      
       return {
         ...sessionUser,
         name: dbProfile.name || sessionUser.user_metadata?.name || sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0],
-        plan: validPlan,
+        plan: dbProfile.plan ?? 'free',
         avatarUrl: dbProfile.avatar_url || sessionUser.user_metadata?.avatar_url,
         email: dbProfile.email || sessionUser.email,
       };
@@ -62,7 +60,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return {
         ...sessionUser,
         name: sessionUser.user_metadata?.name || sessionUser.user_metadata?.full_name || sessionUser.email?.split('@')[0],
-        plan: 'free' as const,
+        plan: 'free',
         avatarUrl: sessionUser.user_metadata?.avatar_url,
         email: sessionUser.email,
       };
