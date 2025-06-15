@@ -58,8 +58,9 @@ const Navbar = () => {
   const handleAdminLogin = async () => {
     try {
       setIsLoading(true);
-      // Admin has specific email to identify them
-      if (adminEmail !== 'admin@flyerflix.com') {
+      // Permitir múltiplos emails de admin
+      const allowedAdminEmails = ['admin@flyerflix.com', 'foxdesignpb@gmail.com'];
+      if (!allowedAdminEmails.includes(adminEmail)) {
         throw new Error('Email de administrador não reconhecido');
       }
       
