@@ -322,7 +322,7 @@ const Dashboard = () => {
   return (
     <MemberLayout showWelcomeMessage={true}>
       {/* Welcome modal for first-time users */}
-      {/* <WelcomeModal userName={user?.name?.split(' ')[0]} /> */}
+      <WelcomeModal userName={user?.name?.split(' ')[0]} />
       
       {/* Onboarding guide for new users */}
       <OnboardingGuide />
@@ -606,4 +606,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
