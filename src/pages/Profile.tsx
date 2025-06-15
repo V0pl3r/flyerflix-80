@@ -97,11 +97,19 @@ const Profile = () => {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('Arquivo para upload selecionado:', e.target.files?.[0]);
     const file = e.target.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      console.warn('Nenhum arquivo selecionado.');
+      toast({
+        title: "Nenhum arquivo selecionado",
+        description: "Por favor, selecione uma imagem para enviar.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Validação de tipo e tamanho, igual ao original
     if (file.size > MAX_FILE_SIZE) {
       toast({
         title: "Erro ao fazer upload",
@@ -120,53 +128,75 @@ const Profile = () => {
       return;
     }
 
-    if (!user) return;
-
-    // Nome único pro arquivo (userId/timestamp.ext)
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    // Faz upload no Supabase Storage
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) {
+    if (!user) {
+      console.error('Usuário não encontrado no contexto/localStorage.');
       toast({
-        title: "Erro ao enviar imagem",
-        description: "Ocorreu um erro ao enviar a imagem.",
+        title: "Falha de Usuário",
+        description: "Não foi possível encontrar suas informações. Faça login novamente.",
         variant: "destructive"
       });
       return;
     }
 
-    // Obtem URL pública do avatar
-    const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-    const avatarUrl = data.publicUrl;
+    try {
+      // Nome único pro arquivo (userId/timestamp.ext)
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
 
-    // Atualiza tabela profiles
-    const updated = await updateUserProfile({ id: user.id, avatar_url: avatarUrl });
-    if (!updated) {
+      console.log('Fazendo upload para:', filePath);
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error('Erro no upload para Supabase:', uploadError);
+        toast({
+          title: "Erro ao enviar imagem",
+          description: uploadError.message || "Ocorreu um erro ao enviar a imagem.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      console.log('URL pública do avatar:', data?.publicUrl);
+
+      const avatarUrl = data?.publicUrl;
+
+      if (!avatarUrl) {
+        throw new Error('URL pública do Supabase não encontrada!');
+      }
+
+      const updated = await updateUserProfile({ id: user.id, avatar_url: avatarUrl });
+      if (!updated) {
+        toast({
+          title: "Erro ao salvar foto de perfil",
+          description: "Tente novamente.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setUploadedImage(avatarUrl);
+
+      const updatedUser = { ...user, avatarUrl };
+      setUser(updatedUser);
+      localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
+
       toast({
-        title: "Erro ao salvar foto de perfil",
-        description: "Tente novamente.",
+        title: "Imagem atualizada",
+        description: "Sua foto de perfil foi alterada com sucesso."
+      });
+    } catch (err: any) {
+      console.error('Erro inesperado no upload:', err);
+      toast({
+        title: "Falha inesperada no upload",
+        description: err?.message || "Erro desconhecido.",
         variant: "destructive"
       });
-      return;
     }
-
-    setUploadedImage(avatarUrl);
-
-    // Atualiza state e localStorage
-    const updatedUser = { ...user, avatarUrl };
-    setUser(updatedUser);
-    localStorage.setItem('flyerflix-user', JSON.stringify(updatedUser));
-
-    toast({
-      title: "Imagem atualizada",
-      description: "Sua foto de perfil foi alterada com sucesso."
-    });
   };
 
   const onSubmit = (data: ProfileFormData) => {
