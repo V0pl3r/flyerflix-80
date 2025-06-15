@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { BadgeCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { fetchUserProfile } from '@/models/UserProfile';
 
 interface ProfileModalProps {
   open: boolean;
@@ -11,7 +12,25 @@ interface ProfileModalProps {
 }
 
 const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  
+  useEffect(() => {
+    // Fetch updated user profile when modal opens
+    const loadUserProfile = async () => {
+      if (session?.user?.id && open) {
+        try {
+          const profile = await fetchUserProfile(session.user.id);
+          if (profile) {
+            console.log('Profile loaded:', profile);
+          }
+        } catch (error) {
+          console.error('Error loading profile:', error);
+        }
+      }
+    };
+
+    loadUserProfile();
+  }, [session?.user?.id, open]);
   
   if (!user) return null;
   
@@ -35,7 +54,7 @@ const ProfileModal = ({ open, onOpenChange }: ProfileModalProps) => {
             </Avatar>
             
             <div className="text-center">
-              <h3 className="text-xl font-semibold text-white">{user.name}</h3>
+              <h3 className="text-xl font-semibold text-white">{user.name || user.email?.split('@')[0]}</h3>
               <p className="text-white/70 mt-1">{user.email}</p>
             </div>
             
