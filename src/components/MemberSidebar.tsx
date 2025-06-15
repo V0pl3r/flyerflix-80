@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -26,14 +25,18 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   const [user, setUser] = useState<UserType | null>(null);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const location = useLocation();
-  
+
   useEffect(() => {
     const userData = localStorage.getItem('flyerflix-user');
     if (userData) {
       setUser(JSON.parse(userData));
+      console.log('[MemberSidebar] Usuario encontrado:', userData);
+    } else {
+      setUser(null);
+      console.log('[MemberSidebar] Nenhum usuario encontrado no localStorage');
     }
   }, []);
-  
+
   const isActive = (path: string) => {
     return location.pathname === path;
   };
@@ -41,12 +44,25 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
   const getFirstName = (fullName: string) => {
     return fullName.split(' ')[0];
   };
-  
+
   const handleAvatarClick = () => {
     setIsProfileModalOpen(true);
   };
-  
-  if (!user) return null;
+
+  // NOVO: Exibir placeholder amigável se não há usuário
+  if (!user) {
+    return (
+      <aside className="h-screen bg-[#0b0b0b] border-r border-white/10 fixed left-0 top-0 z-30 w-64 flex flex-col items-center justify-center">
+        <div className="text-center px-6">
+          <div className="text-flyerflix-red text-xl font-bold mb-2">FLYERFLIX</div>
+          <div className="text-white/80 mb-2">Faça login para acessar a área de membros</div>
+          <Link to="/login">
+            <Button className="bg-flyerflix-red w-full mt-2">Fazer Login</Button>
+          </Link>
+        </div>
+      </aside>
+    );
+  }
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -243,8 +259,8 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
       )}
     </div>
   );
-  
-  // For mobile drawer - render content directly
+
+  // Para mobile drawer:
   if (isMobileDrawer) {
     return (
       <>
@@ -256,16 +272,16 @@ const MemberSidebar = ({ isMobileDrawer = false }: MemberSidebarProps) => {
       </>
     );
   }
-  
-  // For desktop - always render the sidebar
+
+  // Para desktop:
   return (
     <>
       <ProfileModal 
         open={isProfileModalOpen} 
         onOpenChange={setIsProfileModalOpen} 
       />
-      
-      {/* Desktop sidebar - always visible */}
+
+      {/* Desktop sidebar - sempre visível */}
       <aside 
         className={`h-screen bg-[#0b0b0b] border-r border-white/10 fixed left-0 top-0 z-30 transition-all duration-300 hidden md:block ${
           collapsed ? 'w-16' : 'w-64'
